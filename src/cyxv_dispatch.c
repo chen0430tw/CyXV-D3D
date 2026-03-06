@@ -273,8 +273,8 @@ static void render_frame(const FrameMeta *m, const uint8_t *pixels) {
         XPutImage(g_dpy, drw, gc, img, 0, 0,
                   m->drw_x, m->drw_y, (unsigned)w, (unsigned)h);
         XFlush(g_dpy);
-        img->data = NULL;
-        XDestroyImage(img);
+        img->data = NULL;   /* bgra freed separately below */
+        XFree(img);         /* XDestroyImage macro unreliable on Cygwin; data already nulled */
     }
     XFreeGC(g_dpy, gc);
     free(bgra);
