@@ -42,7 +42,8 @@
 #include <X11/Xlib.h>
 
 #ifdef __CYGWIN__
-# undef Status   /* X11/Xlib.h defines Status as int; conflicts with w32api struct members */
+# undef Status        /* X11/Xlib.h defines Status as int; conflicts with w32api */
+# undef ControlMask  /* X11/X.h defines ControlMask as (1<<2); conflicts with processthreadsapi.h */
 # include <windows.h>
 #endif
 
