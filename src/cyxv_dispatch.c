@@ -71,7 +71,7 @@ static unsigned long *g_shm_seg_type = NULL;  /* pointer to ShmSegType global */
 void cyxv_set_shm_lookup(DixLookupFn fn, unsigned long *seg_type_ptr) {
     g_dix_lookup    = fn;
     g_shm_seg_type  = seg_type_ptr;
-    fprintf(stderr, "[CyXV] SHM lookup: dixLookupResourceByType=%p ShmSegType@%p=0x%lx\n",
+    CYXV_LOG( "[CyXV] SHM lookup: dixLookupResourceByType=%p ShmSegType@%p=0x%lx\n",
             (void *)fn, (void *)seg_type_ptr,
             seg_type_ptr ? *seg_type_ptr : 0UL);
 }
@@ -97,7 +97,7 @@ static int shmseg_to_shmid(uint32_t xid, void *client) {
             int id = *(int *)((char *)desc + 8);
             if (id > 0) return id;
         }
-        fprintf(stderr, "[CyXV] dixLookup shmseg 0x%x → rc=%d desc=%p\n",
+        CYXV_LOG( "[CyXV] dixLookup shmseg 0x%x → rc=%d desc=%p\n",
                 xid, rc, desc);
     }
     /* Fallback */
@@ -152,12 +152,12 @@ static int ring_enqueue(const FrameMeta *m) {
     uint32_t head = __atomic_load_n(&g_ring.head, __ATOMIC_RELAXED);
     uint32_t tail = __atomic_load_n(&g_ring.tail, __ATOMIC_ACQUIRE);
     if (head - tail >= RING_SIZE) {
-        fprintf(stderr, "[CyXV:DBG] ring FULL — dropping frame "
+        CYXV_LOG( "[CyXV:DBG] ring FULL — dropping frame "
                 "fourcc=%.4s %ux%u drw=0x%x\n",
                 (const char *)&m->fourcc, m->width, m->height, m->drawable);
         return -1;
     }
-    fprintf(stderr, "[CyXV:DBG] ring_enqueue [%u] fourcc=%.4s %ux%u "
+    CYXV_LOG( "[CyXV:DBG] ring_enqueue [%u] fourcc=%.4s %ux%u "
             "drw=0x%x shmseg=0x%x shmid=%d\n",
             head & RING_MASK, (const char *)&m->fourcc,
             m->width, m->height, m->drawable, m->shmseg, m->shmid);
@@ -265,7 +265,7 @@ static void nv12_to_bgra(const uint8_t *s, int w, int h, uint8_t *dst) {
 
 static void render_frame(const FrameMeta *m, const uint8_t *pixels) {
     if (!g_dpy || !pixels) return;
-    fprintf(stderr, "[CyXV:DBG] render_frame fourcc=%.4s %ux%u "
+    CYXV_LOG( "[CyXV:DBG] render_frame fourcc=%.4s %ux%u "
             "drw=0x%x dst=(%d,%d,%ux%u)\n",
             (const char *)&m->fourcc, m->width, m->height, m->drawable,
             m->drw_x, m->drw_y, m->drw_w, m->drw_h);
@@ -322,7 +322,7 @@ static void *render_thread(void *arg) {
             /* ShmPutImage: attach SHM segment (cached after first attach) */
             uint8_t *base = shm_attach(m.shmseg, m.shmid);
             if (base) render_frame(&m, base + m.shm_offset);
-            else      fprintf(stderr, "[CyXV] shm_attach failed for seg 0x%x\n",
+            else      CYXV_LOG( "[CyXV] shm_attach failed for seg 0x%x\n",
                               m.shmseg);
         }
     }
@@ -335,7 +335,7 @@ void cyxv_start_render_thread(void) {
     pthread_t tid;
     pthread_create(&tid, NULL, render_thread, NULL);
     pthread_detach(tid);
-    fprintf(stderr, "[CyXV] render thread started\n");
+    CYXV_LOG( "[CyXV] render thread started\n");
 }
 
 /* ── XV reply helpers (dispatch thread — no blocking allowed) ─────────── */
@@ -571,7 +571,7 @@ static int h_ShmPutImage(void *c) {
      * Falls back to low-24-bits heuristic if dixLookupResourceByType
      * was not resolved at init time.                                  */
     int shmid = shmseg_to_shmid(req->shmseg, c);
-    fprintf(stderr, "[CyXV:DBG] ShmPutImage shmseg=0x%x → shmid=%d "
+    CYXV_LOG( "[CyXV:DBG] ShmPutImage shmseg=0x%x → shmid=%d "
             "offset=%u fourcc=%.4s %ux%u drw=0x%x\n",
             req->shmseg, shmid, req->offset,
             (const char *)&req->id,
@@ -660,7 +660,7 @@ static const char *opcode_name(uint8_t op) {
 int cyxv_dispatch(void *client) {
     const xGenericReq *req = req_buf(client);
     if (!req) return 0;
-    fprintf(stderr, "[CyXV:DBG] dispatch minor=%u (%s)\n",
+    CYXV_LOG( "[CyXV:DBG] dispatch minor=%u (%s)\n",
             req->minor_opcode, opcode_name(req->minor_opcode));
     switch (req->minor_opcode) {
     case X_XvQueryExtension:       return h_QueryExtension(client);

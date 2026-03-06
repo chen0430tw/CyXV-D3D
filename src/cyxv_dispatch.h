@@ -2,7 +2,14 @@
 #define CYXV_DISPATCH_H
 
 #include <stdint.h>
+#include <stdio.h>
 #include <X11/Xlib.h>
+
+/* Stable log handle: dup'd from stderr in cyxv_ctor() before XWin can
+ * redirect fd 2.  Use CYXV_LOG() for all [CyXV] output.               */
+extern FILE *g_log;
+#define CYXV_LOG(fmt, ...) \
+    do { if (g_log) { fprintf(g_log, fmt, ##__VA_ARGS__); fflush(g_log); } } while(0)
 
 /* Set by cyxv_init.c after opening Display */
 void cyxv_set_display(Display *dpy, int screen);

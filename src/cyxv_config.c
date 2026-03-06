@@ -3,6 +3,7 @@
  */
 
 #include "cyxv_config.h"
+#include "cyxv_dispatch.h"   /* CYXV_LOG */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +59,7 @@ static void parse_file(CyxvConfig *cfg, const char *path) {
     FILE *f = fopen(path, "r");
     if (!f) return;
 
-    fprintf(stderr, "[CyXV] Config: %s\n", path);
+    CYXV_LOG("[CyXV] Config: %s\n", path);
     char line[256];
     while (fgets(line, sizeof(line), f)) {
         /* Strip comments */

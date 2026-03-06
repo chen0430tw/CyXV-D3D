@@ -39,7 +39,20 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <X11/Xlib.h>
+
+/* ── Stable log handle ────────────────────────────────────────────────────
+ * XWin redirects fd 2 (stderr) early in main() to its own log file.
+ * cyxv_ctor() runs before main() via __attribute__((constructor)), so we
+ * dup() fd 2 right then to capture the terminal's stderr.  All subsequent
+ * [CyXV] output uses g_log instead of stderr so it reaches the user even
+ * after XWin's redirection.
+ */
+FILE *g_log = NULL;   /* set once in cyxv_ctor, read-only after that */
+
+#define CYXV_LOG(fmt, ...) \
+    do { if (g_log) { fprintf(g_log, fmt, ##__VA_ARGS__); fflush(g_log); } } while(0)
 
 #ifdef __CYGWIN__
 # undef Status        /* X11/Xlib.h defines Status as int; conflicts with w32api */
@@ -107,23 +120,23 @@ static void *resolve(const char *name, uint64_t rva) {
     /* 1. Cygwin POSIX dynamic linker — works because GDB confirms the
      *    symbol is in XWin.exe's exported Cygwin symbol table.         */
     void *sym = dlsym(RTLD_DEFAULT, name);
-    if (sym) { fprintf(stderr, "[CyXV] %-22s dlsym       → %p\n", name, sym); return sym; }
+    if (sym) { CYXV_LOG("[CyXV] %-22s dlsym       → %p\n", name, sym); return sym; }
 
 #ifdef __CYGWIN__
     /* 2. Windows PE export table */
     sym = (void *)GetProcAddress(GetModuleHandle(NULL), name);
-    if (sym) { fprintf(stderr, "[CyXV] %-22s GetProcAddr → %p\n", name, sym); return sym; }
+    if (sym) { CYXV_LOG("[CyXV] %-22s GetProcAddr → %p\n", name, sym); return sym; }
 #endif
 
     /* 3. image_base + RVA (ASLR-safe: RVA is constant per build) */
     uintptr_t base = xwin_image_base();
     if (base && rva) {
         sym = (void *)(base + rva);
-        fprintf(stderr, "[CyXV] %-22s base+RVA    → %p\n", name, sym);
+        CYXV_LOG("[CyXV] %-22s base+RVA    → %p\n", name, sym);
         return sym;
     }
 
-    fprintf(stderr, "[CyXV] FATAL: cannot resolve %s\n", name);
+    CYXV_LOG("[CyXV] FATAL: cannot resolve %s\n", name);
     return NULL;
 }
 
@@ -137,8 +150,8 @@ static void *init_thread(void *arg) {
     cyxv_config_load(&cfg);
 
     const char *extname = cyxv_extension_name(&cfg);
-    fprintf(stderr, "[CyXV] xvcompat=%s → registering as \"%s\"\n",
-            cfg.xvcompat ? "true" : "false", extname);
+    CYXV_LOG("[CyXV] xvcompat=%s → registering as \"%s\"\n",
+             cfg.xvcompat ? "true" : "false", extname);
 
     /* Wait for XWin's InitExtensions() to complete.
      * The server logs "Initializing built-in extension ..." during startup.
@@ -151,12 +164,12 @@ static void *init_thread(void *arg) {
     WriteToClientFn wtc     = resolve("WriteToClient", RVA_WriteToClient);
 
     if (!add_ext) {
-        fprintf(stderr, "[CyXV] Cannot find AddExtension — aborting\n");
+        CYXV_LOG("[CyXV] Cannot find AddExtension — aborting\n");
         return NULL;
     }
 
     if (wtc)  cyxv_set_write_fn(wtc);
-    else      fprintf(stderr, "[CyXV] WARNING: WriteToClient not found — replies disabled\n");
+    else      CYXV_LOG("[CyXV] WARNING: WriteToClient not found — replies disabled\n");
 
     /* ── MIT-SHM shmseg XID → shmid resolution ───────────────────── *
      * dixLookupResourceByType: generic server resource lookup API.   *
@@ -168,10 +181,9 @@ static void *init_thread(void *arg) {
     if (dix_fn && shm_type)
         cyxv_set_shm_lookup(dix_fn, shm_type);
     else
-        fprintf(stderr,
-                "[CyXV] WARNING: SHM lookup unavailable "
-                "(dixLookup=%p ShmSegType=%p) — falling back to XID mask\n",
-                (void *)dix_fn, (void *)shm_type);
+        CYXV_LOG("[CyXV] WARNING: SHM lookup unavailable "
+                 "(dixLookup=%p ShmSegType=%p) — falling back to XID mask\n",
+                 (void *)dix_fn, (void *)shm_type);
 
     /* ── Private Display for render thread ────────────────────────── */
 
@@ -184,15 +196,14 @@ static void *init_thread(void *arg) {
          * concurrently holding the Display lock.                        */
         uint32_t vid =
             (uint32_t)XVisualIDFromVisual(DefaultVisual(dpy, scr));
-        fprintf(stderr,
-                "[CyXV] XOpenDisplay(%s) ok — screen=%d depth=%d visual=0x%x\n",
-                cfg.display, scr, DefaultDepth(dpy, scr), vid);
+        CYXV_LOG("[CyXV] XOpenDisplay(%s) ok — screen=%d depth=%d visual=0x%x\n",
+                 cfg.display, scr, DefaultDepth(dpy, scr), vid);
         cyxv_set_visual_id(vid);
         cyxv_set_display(dpy, scr);
         cyxv_start_render_thread();
     } else {
-        fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(%s) failed — rendering disabled\n",
-                cfg.display);
+        CYXV_LOG("[CyXV] WARNING: XOpenDisplay(%s) failed — rendering disabled\n",
+                 cfg.display);
     }
 
     /* ── Register extension (standard Xorg API, no patching) ─────── */
@@ -211,16 +222,14 @@ static void *init_thread(void *arg) {
      * No manual VirtualProtect or vector patching needed.               */
 
     if (entry) {
-        fprintf(stderr,
-                "[CyXV] \"%s\" registered: opcode=%d entry=%p\n"
-                "[CyXV] Verify: DISPLAY=:0 xdpyinfo | grep %s\n",
-                extname, (int)(unsigned short)entry->base, (void *)entry,
-                cfg.xvcompat ? "XVideo" : "CyXV-D3D");
+        CYXV_LOG("[CyXV] \"%s\" registered: opcode=%d entry=%p\n"
+                 "[CyXV] Verify: DISPLAY=:0 xdpyinfo | grep %s\n",
+                 extname, (int)(unsigned short)entry->base, (void *)entry,
+                 cfg.xvcompat ? "XVideo" : "CyXV-D3D");
     } else {
-        fprintf(stderr,
-                "[CyXV] AddExtension returned NULL\n"
-                "[CyXV] Possible causes: already registered, called too early,\n"
-                "[CyXV] or extension table is full (max 128 extensions).\n");
+        CYXV_LOG("[CyXV] AddExtension returned NULL\n"
+                 "[CyXV] Possible causes: already registered, called too early,\n"
+                 "[CyXV] or extension table is full (max 128 extensions).\n");
     }
 
     return NULL;
@@ -237,7 +246,17 @@ static void cyxv_ctor(void) {
      * connects.  Called here, on the main thread, before we spawn
      * init_thread, to guarantee ordering.                              */
     int xth = XInitThreads();
-    fprintf(stderr, "[CyXV] libcyxv loaded — XInitThreads()=%d — spawning init thread\n", xth);
+
+    /* Save fd 2 NOW, before XWin's main() can redirect it.
+     * FD_CLOEXEC keeps it private; O_WRONLY|append writes go to the tty. */
+    int saved_fd = dup(2);
+    if (saved_fd >= 0) {
+        fcntl(saved_fd, F_SETFD, FD_CLOEXEC);
+        g_log = fdopen(saved_fd, "w");
+    }
+    if (!g_log) g_log = stderr;   /* fallback: better than nothing */
+
+    CYXV_LOG("[CyXV] libcyxv loaded — XInitThreads()=%d — spawning init thread\n", xth);
     pthread_t tid;
     pthread_create(&tid, NULL, init_thread, NULL);
     pthread_detach(tid);
