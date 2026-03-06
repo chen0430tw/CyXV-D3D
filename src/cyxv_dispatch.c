@@ -173,9 +173,18 @@ static int ring_dequeue(FrameMeta *out) {
 static Display *g_dpy    = NULL;
 static int      g_screen = 0;
 
+/* Visual ID cached at init time (init_thread, not dispatch thread).
+ * Default 0x21 is the typical TrueColor visual on 24-bit displays;
+ * cyxv_set_visual_id() overrides this once XOpenDisplay succeeds.    */
+static uint32_t g_visual_id = 0x21;
+
 void cyxv_set_display(Display *dpy, int screen) {
     g_dpy    = dpy;
     g_screen = screen;
+}
+
+void cyxv_set_visual_id(uint32_t visual_id) {
+    g_visual_id = visual_id;
 }
 
 /* ── SHM segment address cache (render thread only) ──────────────────── */
@@ -452,9 +461,7 @@ static int h_QueryAdaptors(void *c) {
 
     xXvFormat fmt = {0};
     fmt.depth=24;
-    fmt.visual = g_dpy
-        ? (uint32_t)XVisualIDFromVisual(DefaultVisual(g_dpy, g_screen))
-        : 0x21;
+    fmt.visual = g_visual_id;   /* cached by init_thread; never touched here */
     send_reply(c, &fmt, sizeof(fmt));
     return 0;
 }

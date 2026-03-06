@@ -177,7 +177,14 @@ static void *init_thread(void *arg) {
 
     Display *dpy = XOpenDisplay(cfg.display);
     if (dpy) {
-        cyxv_set_display(dpy, DefaultScreen(dpy));
+        int scr = DefaultScreen(dpy);
+        /* Cache the visual ID NOW, in init_thread (not dispatch thread),
+         * so h_QueryAdaptors never has to call XVisualIDFromVisual()
+         * from the server's main thread while the render thread may be
+         * concurrently holding the Display lock.                        */
+        cyxv_set_visual_id(
+            (uint32_t)XVisualIDFromVisual(DefaultVisual(dpy, scr)));
+        cyxv_set_display(dpy, scr);
         cyxv_start_render_thread();
     } else {
         fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(%s) failed — rendering disabled\n",
@@ -219,6 +226,13 @@ static void *init_thread(void *arg) {
 
 __attribute__((constructor))
 static void cyxv_ctor(void) {
+    /* XInitThreads() must be called before any other Xlib call.
+     * Without it, Xlib's internal Display mutex is never initialised,
+     * so concurrent calls from the render thread and the dispatch thread
+     * (which share g_dpy) deadlock immediately when the first XV client
+     * connects.  Called here, on the main thread, before we spawn
+     * init_thread, to guarantee ordering.                              */
+    XInitThreads();
     fprintf(stderr, "[CyXV] libcyxv loaded — spawning init thread\n");
     pthread_t tid;
     pthread_create(&tid, NULL, init_thread, NULL);

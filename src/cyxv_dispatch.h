@@ -1,10 +1,16 @@
 #ifndef CYXV_DISPATCH_H
 #define CYXV_DISPATCH_H
 
+#include <stdint.h>
 #include <X11/Xlib.h>
 
 /* Set by cyxv_init.c after opening Display */
 void cyxv_set_display(Display *dpy, int screen);
+
+/* Cache the default visual ID so h_QueryAdaptors never needs to call
+ * XVisualIDFromVisual() from the dispatch (server main) thread.
+ * Must be called from init_thread after XOpenDisplay succeeds.       */
+void cyxv_set_visual_id(uint32_t visual_id);
 
 /* WriteToClient function pointer resolved from XWin.exe */
 typedef void (*WriteToClientFn)(void *client, int len, const void *data);
