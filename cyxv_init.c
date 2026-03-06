@@ -1,31 +1,30 @@
 /*
- * cyxv_init.c — DLL constructor: find AddExtension, register XV extension
+ * cyxv_init.c — DLL constructor: register XV extension via AddExtension,
+ *               then verify/patch ProcVector & SwappedProcVector directly.
  *
- * ASLR-safe symbol resolution strategy (tried in order):
+ * ASLR solution:
+ *   GDB confirmed that ProcVector, SwappedProcVector, AddExtension, and
+ *   WriteToClient are all visible as named symbols in XWin.exe's Cygwin
+ *   dynamic symbol table.  dlsym(NULL, name) resolves them at runtime
+ *   without any hardcoded address — fully ASLR-safe.
  *
- *   1. dlsym(NULL, "AddExtension")
- *      Works when Cygwin's POSIX dynamic linker has the symbol
- *      (GCC -export-dynamic or Cygwin auto-export).
+ *   Fallback chain (only if dlsym fails):
+ *     GetProcAddress(GetModuleHandle(NULL), name)  ← Windows PE export table
+ *     /proc/self/maps base + build-specific RVA    ← last resort
  *
- *   2. GetProcAddress(GetModuleHandle(NULL), "AddExtension")
- *      Works when the symbol is in the PE export table
- *      (gcc -Wl,--export-all-symbols or explicit .def file).
- *
- *   3. /proc/self/maps + PE export directory scan
- *      Reads XWin.exe's own PE headers from memory to walk the export
- *      table by name — works even without explicit export directives,
- *      because the PE loader still builds an in-memory export directory
- *      if the image was linked with --export-all-symbols (common for
- *      Cygwin Xorg builds).
- *
- *   4. /proc/self/maps base + known file offset (build-specific)
- *      If we know the RVA of AddExtension for this exact XWin.exe build,
- *      compute VA = image_base + rva.  The RVA is stable per build even
- *      when ASLR moves the image_base.  RVA is stored in CYXV_ADDEXT_RVA.
+ * Injection flow:
+ *   1. dlsym → AddExtension, WriteToClient, ProcVector, SwappedProcVector
+ *   2. AddExtension("XVideo") → XWin assigns a major opcode N, fills
+ *      ProcVector[N] with our handler automatically.
+ *   3. We read back N from ExtensionEntry.base and double-check that
+ *      ProcVector[N] == our handler; if not (some builds skip filling it),
+ *      we patch it directly.
+ *   4. SwappedProcVector[N] is always set explicitly (some builds leave it
+ *      pointing to a no-op swapped stub).
  *
  * Build:
  *   gcc -O2 -shared -fPIC -o cyxv.dll cyxv_init.c cyxv_dispatch.c \
- *       -lX11 -lpthread -lXext
+ *       -lX11 -lpthread
  *
  * Usage:
  *   LD_PRELOAD=$PWD/cyxv.dll XWin :0 -multiwindow -listen tcp &
@@ -40,134 +39,62 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
 
-/* Windows/Cygwin PE headers ─────────────────────────────────────────────── */
 #ifdef __CYGWIN__
 # include <windows.h>
-#else
-/* Minimal PE structures for non-Cygwin builds (shouldn't happen) */
-typedef uint32_t DWORD;
-typedef uint16_t WORD;
-typedef uint8_t  BYTE;
 #endif
 
-/* ── Build-specific fallback (update from GDB for each XWin.exe build) ────
+/* ── Build-specific RVA fallbacks (derive from GDB: VA - image_base) ────────
  *
- * How to find these values for a new build:
  *   (gdb) info address AddExtension
- *   → "Symbol AddExtension is at 0x10048a4e0"
- *   → image_base (from PE header or /proc/self/maps): 0x100000000
- *   → CYXV_ADDEXT_RVA = 0x10048a4e0 - 0x100000000 = 0x48a4e0
+ *   Symbol "AddExtension" is at 0x10048a4e0
+ *   image_base from /proc/self/maps XWin.exe line: 0x100000000
+ *   RVA = 0x10048a4e0 - 0x100000000 = 0x48a4e0
  *
- * We use the RVA because it is ASLR-invariant for a given binary build.
+ * These are only used if all three primary methods fail.
  */
-#define CYXV_ADDEXT_RVA        0x48a4e0ULL   /* offset within XWin.exe image */
-#define CYXV_WRITETOCLIENT_RVA 0x546de0ULL   /* likewise for WriteToClient   */
+#define RVA_AddExtension    0x48a4e0ULL
+#define RVA_WriteToClient   0x546de0ULL
+#define RVA_ProcVector      0x587600ULL   /* update from GDB: p &ProcVector  */
+#define RVA_SwappedProcVector 0x587a00ULL /* p &SwappedProcVector            */
 
-/* ── Type aliases ─────────────────────────────────────────────────────────── */
+/* ── Xorg ExtensionEntry (only the fields we need) ──────────────────────── */
 
-typedef void * (*AddExtensionFn)(
+typedef struct {
+    int   index;        /* extension index in extension table */
+    char *name;
+    short base;         /* ← assigned major opcode */
+    short eventBase;
+    short errorBase;
+    /* ... more fields we don't care about */
+} ExtensionEntry;
+
+/* ── Function-pointer types ─────────────────────────────────────────────── */
+
+typedef ExtensionEntry * (*AddExtensionFn)(
     const char *name,
     int NumEvents,
     int NumErrors,
-    int  (*MainProc)(void *client),
-    int  (*SwappedMainProc)(void *client),
-    void (*CloseDownProc)(void *ext),
+    int            (*MainProc)(void *client),
+    int            (*SwappedMainProc)(void *client),
+    void           (*CloseDownProc)(ExtensionEntry *),
     unsigned short (*MinorOpcodeProc)(void *client)
 );
 
 typedef void (*WriteToClientFn)(void *client, int len, const void *data);
 
-/* ── Method 1: dlsym ────────────────────────────────────────────────────── */
+/* ── /proc/self/maps: find XWin.exe image base ──────────────────────────── */
 
-static void *try_dlsym(const char *sym) {
-    void *h = dlopen(NULL, RTLD_NOW | RTLD_GLOBAL);
-    if (!h) return NULL;
-    void *fn = dlsym(h, sym);
-    dlclose(h);
-    return fn;
-}
-
-/* ── Method 2: Windows GetProcAddress ───────────────────────────────────── */
-
-static void *try_getprocaddr(const char *sym) {
-#ifdef __CYGWIN__
-    HMODULE exe = GetModuleHandle(NULL);
-    if (!exe) return NULL;
-    return (void *)GetProcAddress(exe, sym);
-#else
-    (void)sym;
-    return NULL;
-#endif
-}
-
-/* ── Method 3: Walk in-memory PE export table ────────────────────────────── */
-/*
- * Given the image base pointer (from /proc/self/maps), parse the PE
- * optional header's DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT] and
- * walk the name/address arrays to find 'sym'.
- *
- * This works for any Windows PE binary regardless of export-table
- * generation flags, because we are reading the PE in our own address
- * space after the loader has already mapped it.
- */
-static void *pe_find_export(uintptr_t base, const char *sym) {
-#ifdef __CYGWIN__
-    __try {
-        /* Validate MZ signature */
-        IMAGE_DOS_HEADER *dos = (IMAGE_DOS_HEADER *)base;
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE) return NULL;
-
-        IMAGE_NT_HEADERS *nt =
-            (IMAGE_NT_HEADERS *)(base + dos->e_lfanew);
-        if (nt->Signature != IMAGE_NT_SIGNATURE) return NULL;
-
-        IMAGE_DATA_DIRECTORY *expdir =
-            &nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-        if (expdir->VirtualAddress == 0) return NULL;
-
-        IMAGE_EXPORT_DIRECTORY *exp =
-            (IMAGE_EXPORT_DIRECTORY *)(base + expdir->VirtualAddress);
-
-        DWORD  *names   = (DWORD  *)(base + exp->AddressOfNames);
-        WORD   *ordinals= (WORD   *)(base + exp->AddressOfNameOrdinals);
-        DWORD  *funcs   = (DWORD  *)(base + exp->AddressOfFunctions);
-
-        for (DWORD i = 0; i < exp->NumberOfNames; i++) {
-            const char *name = (const char *)(base + names[i]);
-            if (strcmp(name, sym) == 0) {
-                DWORD rva = funcs[ordinals[i]];
-                return (void *)(base + rva);
-            }
-        }
-    } __except (EXCEPTION_EXECUTE_HANDLER) { }
-#else
-    (void)base; (void)sym;
-#endif
-    return NULL;
-}
-
-/* ── /proc/self/maps parser ─────────────────────────────────────────────── */
-/*
- * Find the mapping entry for XWin.exe (the main executable) and return
- * its load base address.
- *
- * /proc/self/maps lines look like:
- *   100000000-100001000 r--p 00000000 08:01 12345  /usr/bin/XWin.exe
- */
-static uintptr_t find_xwin_base(void) {
+static uintptr_t xwin_image_base(void) {
     FILE *f = fopen("/proc/self/maps", "r");
     if (!f) return 0;
-
     char line[512];
     uintptr_t base = 0;
     while (fgets(line, sizeof(line), f)) {
-        /* We want the first executable mapping that ends in XWin.exe
-         * or XWin (without .exe on some Cygwin setups).               */
-        if (strstr(line, "XWin") && strstr(line, " r")) {
+        if (strstr(line, "XWin") && strchr(line, 'r')) {
             base = (uintptr_t)strtoull(line, NULL, 16);
             break;
         }
@@ -176,40 +103,59 @@ static uintptr_t find_xwin_base(void) {
     return base;
 }
 
-/* ── Method 4: image_base + known RVA ────────────────────────────────────── */
-
-static void *try_rva(uintptr_t base, uint64_t rva) {
-    if (!base || !rva) return NULL;
-    return (void *)(base + rva);
-}
-
-/* ── Master resolver ─────────────────────────────────────────────────────── */
-
-static void *resolve_symbol(const char *sym, uint64_t fallback_rva) {
-    void *fn;
-
-    /* 1 */ fn = try_dlsym(sym);
-    if (fn) { fprintf(stderr, "[CyXV] %s via dlsym @ %p\n", sym, fn); return fn; }
-
-    /* 2 */ fn = try_getprocaddr(sym);
-    if (fn) { fprintf(stderr, "[CyXV] %s via GetProcAddress @ %p\n", sym, fn); return fn; }
-
-    uintptr_t base = find_xwin_base();
-    if (base) {
-        /* 3 */ fn = pe_find_export(base, sym);
-        if (fn) { fprintf(stderr, "[CyXV] %s via PE export @ %p\n", sym, fn); return fn; }
-
-        /* 4 */ fn = try_rva(base, fallback_rva);
-        if (fn) { fprintf(stderr, "[CyXV] %s via base(0x%llx)+RVA(0x%llx) @ %p\n",
-                          sym, (unsigned long long)base,
-                          (unsigned long long)fallback_rva, fn);
-                 return fn; }
-    } else {
-        fprintf(stderr, "[CyXV] WARNING: could not find XWin.exe in /proc/self/maps\n");
+/* ── Generic symbol resolver ────────────────────────────────────────────── */
+/*
+ * Tries (in order):
+ *   1. dlsym(NULL, name)            — Cygwin POSIX linker, proven by GDB
+ *   2. GetProcAddress(exe, name)    — Windows PE export table
+ *   3. image_base + rva             — ASLR-safe offset fallback
+ */
+static void *resolve(const char *name, uint64_t rva) {
+    /* 1 */
+    void *sym = dlsym(RTLD_DEFAULT, name);
+    if (sym) {
+        fprintf(stderr, "[CyXV] %-24s dlsym        → %p\n", name, sym);
+        return sym;
+    }
+#ifdef __CYGWIN__
+    /* 2 */
+    sym = (void *)GetProcAddress(GetModuleHandle(NULL), name);
+    if (sym) {
+        fprintf(stderr, "[CyXV] %-24s GetProcAddr  → %p\n", name, sym);
+        return sym;
+    }
+#endif
+    /* 3 */
+    uintptr_t base = xwin_image_base();
+    if (base && rva) {
+        sym = (void *)(base + rva);
+        fprintf(stderr, "[CyXV] %-24s base+RVA     → %p  (base=%p)\n",
+                name, sym, (void *)base);
+        return sym;
     }
 
-    fprintf(stderr, "[CyXV] FATAL: could not resolve %s\n", sym);
+    fprintf(stderr, "[CyXV] FATAL: cannot resolve %s\n", name);
     return NULL;
+}
+
+/* ── Patch a dispatch vector slot ─────────────────────────────────────────
+ *
+ * ProcVector is a plain C array of function pointers declared as:
+ *   int (*ProcVector[256])(ClientPtr);
+ * We index it by the opcode returned from AddExtension.
+ */
+static void patch_vector(void **vec, int slot, void *fn, const char *vecname) {
+    if (!vec) return;
+#ifdef __CYGWIN__
+    /* Make the page writable (it may be in a read-only segment) */
+    DWORD old;
+    VirtualProtect(&vec[slot], sizeof(void *), PAGE_EXECUTE_READWRITE, &old);
+#endif
+    vec[slot] = fn;
+    fprintf(stderr, "[CyXV] %s[%d] = %p\n", vecname, slot, fn);
+#ifdef __CYGWIN__
+    VirtualProtect(&vec[slot], sizeof(void *), old, &old);
+#endif
 }
 
 /* ── Delayed init thread ─────────────────────────────────────────────────── */
@@ -217,57 +163,72 @@ static void *resolve_symbol(const char *sym, uint64_t fallback_rva) {
 static void *init_thread(void *arg) {
     (void)arg;
 
-    /*
-     * Wait for XWin's InitExtensions() to finish.
-     * XWin prints "Initializing built-in extension XFIXES" etc. during
-     * startup; AddExtension is callable only after that point.
-     * 2 s is conservative; 500 ms usually suffices.
-     */
+    /* Wait for XWin's InitExtensions() to finish.
+     * The server logs "Initializing built-in extension XFIXES" etc.
+     * AddExtension is safe to call after that point (~500 ms usual). */
     sleep(2);
 
-    /* ── Resolve symbols ────────────────────────────────────────────── */
+    /* ── Resolve all symbols ────────────────────────────────────────── */
 
-    AddExtensionFn add_ext =
-        resolve_symbol("AddExtension", CYXV_ADDEXT_RVA);
-    if (!add_ext) {
-        fprintf(stderr, "[CyXV] Cannot find AddExtension — giving up\n");
-        return NULL;
-    }
+    AddExtensionFn  add_ext = resolve("AddExtension",       RVA_AddExtension);
+    WriteToClientFn wtc     = resolve("WriteToClient",      RVA_WriteToClient);
+    void          **PV      = resolve("ProcVector",         RVA_ProcVector);
+    void          **SPV     = resolve("SwappedProcVector",  RVA_SwappedProcVector);
 
-    WriteToClientFn wtc =
-        resolve_symbol("WriteToClient", CYXV_WRITETOCLIENT_RVA);
-    if (wtc)
-        cyxv_set_write_fn(wtc);
-    else
-        fprintf(stderr, "[CyXV] WARNING: WriteToClient not found — replies won't work\n");
+    if (!add_ext) { fprintf(stderr, "[CyXV] Giving up.\n"); return NULL; }
 
-    /* ── Open Display for rendering ─────────────────────────────────── */
+    if (wtc)  cyxv_set_write_fn(wtc);
+    else      fprintf(stderr, "[CyXV] WARNING: WriteToClient missing — no replies\n");
 
+    /* ── Open private Display for rendering ─────────────────────────── */
     Display *dpy = XOpenDisplay(":0");
-    if (dpy)
-        cyxv_set_display(dpy, DefaultScreen(dpy));
-    else
-        fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(:0) failed\n");
+    if (dpy)  cyxv_set_display(dpy, DefaultScreen(dpy));
+    else      fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(:0) failed\n");
 
-    /* ── Register XVideo extension ──────────────────────────────────── */
-
-    void *entry = add_ext(
+    /* ── Call AddExtension ──────────────────────────────────────────── */
+    ExtensionEntry *entry = add_ext(
         "XVideo",
-        0,                      /* NumEvents  */
-        0,                      /* NumErrors  */
+        0,                    /* NumEvents  */
+        0,                    /* NumErrors  */
         cyxv_dispatch,
         cyxv_dispatch_swapped,
-        NULL,                   /* CloseDownProc */
+        NULL,                 /* CloseDownProc */
         cyxv_minor_opcode
     );
 
-    if (entry)
-        fprintf(stderr, "[CyXV] XVideo registered (entry=%p). "
-                "Test: DISPLAY=:0 xdpyinfo | grep XVideo\n", entry);
-    else
+    if (!entry) {
         fprintf(stderr, "[CyXV] AddExtension returned NULL "
-                "(already registered, or server not ready yet)\n");
+                "(already registered, or called too early)\n");
+        return NULL;
+    }
 
+    int opcode = (int)(unsigned short)entry->base;
+    fprintf(stderr, "[CyXV] XVideo registered: opcode=%d  entry=%p\n",
+            opcode, (void *)entry);
+
+    /* ── Verify and force-patch both dispatch vectors ───────────────── */
+    /*
+     * AddExtension fills ProcVector[opcode] automatically.
+     * We verify it is our function; if not (paranoia / different build),
+     * we patch it.  SwappedProcVector is always patched explicitly because
+     * some builds install a generic "not implemented" swapped stub.
+     */
+    if (PV) {
+        if (PV[opcode] != (void *)cyxv_dispatch) {
+            fprintf(stderr, "[CyXV] ProcVector[%d] was %p, patching\n",
+                    opcode, PV[opcode]);
+            patch_vector(PV, opcode, (void *)cyxv_dispatch, "ProcVector");
+        } else {
+            fprintf(stderr, "[CyXV] ProcVector[%d] already correct ✓\n", opcode);
+        }
+    }
+
+    if (SPV)
+        patch_vector(SPV, opcode, (void *)cyxv_dispatch_swapped, "SwappedProcVector");
+
+    fprintf(stderr, "[CyXV] Done. Test with:\n"
+            "  DISPLAY=:0 xdpyinfo | grep XVideo\n"
+            "  DISPLAY=:0 mplayer -vo xv <file>\n");
     return NULL;
 }
 
