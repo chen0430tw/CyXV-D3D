@@ -1,0 +1,2538 @@
+(gdb) disassemble 0x10041fab0, +300
+Dump of assembler code from 0x10041fab0 to 0x10041fbdc:
+   0x000000010041fab0 <XWin!InitExtensions+0>:  push   %rbp
+   0x000000010041fab1 <XWin!InitExtensions+1>:  push   %rdi
+   0x000000010041fab2 <XWin!InitExtensions+2>:  push   %rsi
+   0x000000010041fab3 <XWin!InitExtensions+3>:  push   %rbx
+   0x000000010041fab4 <XWin!InitExtensions+4>:  sub    $0x28,%rsp
+   0x000000010041fab8 <XWin!InitExtensions+8>:  mov    0x1d22c2(%rip),%ecx        # 0x1005f1d80 <g_fButton+80>
+   0x000000010041fabe <XWin!InitExtensions+14>: test   %ecx,%ecx
+   0x000000010041fac0 <XWin!InitExtensions+16>: jne    0x10041fae3 <XWin!InitExtensions+51>
+   0x000000010041fac2 <XWin!InitExtensions+18>: mov    $0x1,%r8d
+   0x000000010041fac8 <XWin!InitExtensions+24>: mov    $0x17,%edx
+   0x000000010041facd <XWin!InitExtensions+29>: lea    0x17af6c(%rip),%rcx        # 0x10059aa40 <XWin!CLSID_TaskbarList+3792>
+   0x000000010041fad4 <XWin!InitExtensions+36>: movl   $0x1,0x1d22a2(%rip)        # 0x1005f1d80 <g_fButton+80>
+   0x000000010041fade <XWin!InitExtensions+46>: call   0x10041f9c0 <XWin!LoadExtensionList>
+   0x000000010041fae3 <XWin!InitExtensions+51>: mov    0x1d229b(%rip),%edx        # 0x1005f1d84 <g_fButton+84>
+   0x000000010041fae9 <XWin!InitExtensions+57>: test   %edx,%edx
+   0x000000010041faeb <XWin!InitExtensions+59>: jle    0x10041fb46 <XWin!InitExtensions+150>
+   0x000000010041faed <XWin!InitExtensions+61>: xor    %edi,%edi
+   0x000000010041faef <XWin!InitExtensions+63>: xor    %esi,%esi
+   0x000000010041faf1 <XWin!InitExtensions+65>: lea    0x17ae47(%rip),%rbp        # 0x10059a93f <XWin!CLSID_TaskbarList+3535>
+   0x000000010041faf8 <XWin!InitExtensions+72>: nopl   0x0(%rax,%rax,1)
+   0x000000010041fb00 <XWin!InitExtensions+80>: mov    0x1d2281(%rip),%rbx        # 0x1005f1d88 <g_fButton+88>
+   0x000000010041fb07 <XWin!InitExtensions+87>: add    %rdi,%rbx
+   0x000000010041fb0a <XWin!InitExtensions+90>: cmpq   $0x0,(%rbx)
+   0x000000010041fb0e <XWin!InitExtensions+94>: je     0x10041fb37 <XWin!InitExtensions+135>
+   0x000000010041fb10 <XWin!InitExtensions+96>: mov    0x10(%rbx),%rax
+   0x000000010041fb14 <XWin!InitExtensions+100>:        test   %rax,%rax
+--Type <RET> for more, q to quit, c to continue without paging--
+   0x000000010041fb17 <XWin!InitExtensions+103>:        je     0x10041fb1f <XWin!InitExtensions+111>
+   0x000000010041fb19 <XWin!InitExtensions+105>:        mov    (%rax),%eax
+   0x000000010041fb1b <XWin!InitExtensions+107>:        test   %eax,%eax
+   0x000000010041fb1d <XWin!InitExtensions+109>:        jne    0x10041fb37 <XWin!InitExtensions+135>
+   0x000000010041fb1f <XWin!InitExtensions+111>:        mov    0x8(%rbx),%r9
+   0x000000010041fb23 <XWin!InitExtensions+115>:        mov    %rbp,%r8
+   0x000000010041fb26 <XWin!InitExtensions+118>:        mov    $0x3,%edx
+   0x000000010041fb2b <XWin!InitExtensions+123>:        mov    $0x7,%ecx
+   0x000000010041fb30 <XWin!InitExtensions+128>:        call   0x10054f930 <XWin!LogMessageVerb>
+   0x000000010041fb35 <XWin!InitExtensions+133>:        call   *(%rbx)
+   0x000000010041fb37 <XWin!InitExtensions+135>:        add    $0x1,%esi
+   0x000000010041fb3a <XWin!InitExtensions+138>:        add    $0x18,%rdi
+   0x000000010041fb3e <XWin!InitExtensions+142>:        cmp    %esi,0x1d2240(%rip)        # 0x1005f1d84 <g_fButton+84>
+   0x000000010041fb44 <XWin!InitExtensions+148>:        jg     0x10041fb00 <XWin!InitExtensions+80>
+   0x000000010041fb46 <XWin!InitExtensions+150>:        add    $0x28,%rsp
+   0x000000010041fb4a <XWin!InitExtensions+154>:        pop    %rbx
+   0x000000010041fb4b <XWin!InitExtensions+155>:        pop    %rsi
+   0x000000010041fb4c <XWin!InitExtensions+156>:        pop    %rdi
+   0x000000010041fb4d <XWin!InitExtensions+157>:        pop    %rbp
+   0x000000010041fb4e <XWin!InitExtensions+158>:        ret
+   0x000000010041fb4f <XWin!InitExtensions+159>:        nop
+   0x000000010041fb50 <XWin!InitExtensions+160>:        ret
+   0x000000010041fb51 <XWin!InitExtensions+161>:        nopl   0x0(%rax)
+   0x000000010041fb55 <XWin!InitExtensions+165>:        data16 cs nopw 0x0(%rax,%rax,1)
+   0x000000010041fb60 <XWin!InitExtensions+176>:        push   %rsi
+   0x000000010041fb61 <XWin!InitExtensions+177>:        push   %rbx
+   0x000000010041fb62 <XWin!InitExtensions+178>:        sub    $0x58,%rsp
+   0x000000010041fb66 <XWin!InitExtensions+182>:        mov    0x19b333(%rip),%rsi        # 0x1005baea0 <glxServer+5312>
+--Type <RET> for more, q to quit, c to continue without paging--
+   0x000000010041fb6d <XWin!InitExtensions+189>:        mov    (%rsi),%rax
+   0x000000010041fb70 <XWin!InitExtensions+192>:        mov    %rax,0x48(%rsp)
+   0x000000010041fb75 <XWin!InitExtensions+197>:        mov    $0x10,%eax
+   0x000000010041fb7a <XWin!InitExtensions+202>:        cmpl   $0x2,0x68(%rcx)
+   0x000000010041fb7e <XWin!InitExtensions+206>:        mov    %rcx,%rbx
+   0x000000010041fb81 <XWin!InitExtensions+209>:        jne    0x10041fbd0 <XWin!InitExtensions+288>
+   0x000000010041fb83 <XWin!InitExtensions+211>:        mov    0x4c(%rcx),%eax
+   0x000000010041fb86 <XWin!InitExtensions+214>:        mov    (%rcx),%rdx
+   0x000000010041fb89 <XWin!InitExtensions+217>:        movb   $0x1,0x20(%rsp)
+   0x000000010041fb8e <XWin!InitExtensions+222>:        movl   $0x0,0x24(%rsp)
+   0x000000010041fb96 <XWin!InitExtensions+230>:        mov    %ax,0x22(%rsp)
+   0x000000010041fb9b <XWin!InitExtensions+235>:        movzbl 0x38(%rcx),%eax
+   0x000000010041fb9f <XWin!InitExtensions+239>:        test   $0x2,%al
+   0x000000010041fba1 <XWin!InitExtensions+241>:        jne    0x10041fbe8 <XWin!InitExtensions+312>
+   0x000000010041fba3 <XWin!InitExtensions+243>:        movb   $0x0,0x28(%rsp)
+   0x000000010041fba8 <XWin!InitExtensions+248>:        test   $0x1,%al
+   0x000000010041fbaa <XWin!InitExtensions+250>:        je     0x10041fbbc <XWin!InitExtensions+268>
+   0x000000010041fbac <XWin!InitExtensions+252>:        mov    0x24(%rsp),%eax
+   0x000000010041fbb0 <XWin!InitExtensions+256>:        rolw   $0x8,0x22(%rsp)
+   0x000000010041fbb6 <XWin!InitExtensions+262>:        bswap  %eax
+   0x000000010041fbb8 <XWin!InitExtensions+264>:        mov    %eax,0x24(%rsp)
+   0x000000010041fbbc <XWin!InitExtensions+268>:        lea    0x20(%rsp),%r8
+   0x000000010041fbc1 <XWin!InitExtensions+273>:        mov    $0x20,%edx
+   0x000000010041fbc6 <XWin!InitExtensions+278>:        mov    %rbx,%rcx
+   0x000000010041fbc9 <XWin!InitExtensions+281>:        call   0x100546de0 <XWin!WriteToClient>
+   0x000000010041fbce <XWin!InitExtensions+286>:        xor    %eax,%eax
+   0x000000010041fbd0 <XWin!InitExtensions+288>:        mov    0x48(%rsp),%rdx
+   0x000000010041fbd5 <XWin!InitExtensions+293>:        sub    (%rsi),%rdx
+   0x000000010041fbd8 <XWin!InitExtensions+296>:        jne    0x10041fc06 <XWin!InitExtensions+342>
+--Type <RET> for more, q to quit, c to continue without paging--
+   0x000000010041fbda <XWin!InitExtensions+298>:        add    $0x58,%rsp
+End of assembler dump.
+(gdb) x/20i 0x10041fab0
+   0x10041fab0 <XWin!InitExtensions>:   push   %rbp
+   0x10041fab1 <XWin!InitExtensions+1>: push   %rdi
+   0x10041fab2 <XWin!InitExtensions+2>: push   %rsi
+   0x10041fab3 <XWin!InitExtensions+3>: push   %rbx
+   0x10041fab4 <XWin!InitExtensions+4>: sub    $0x28,%rsp
+   0x10041fab8 <XWin!InitExtensions+8>: mov    0x1d22c2(%rip),%ecx        # 0x1005f1d80 <g_fButton+80>
+   0x10041fabe <XWin!InitExtensions+14>:        test   %ecx,%ecx
+   0x10041fac0 <XWin!InitExtensions+16>:        jne    0x10041fae3 <XWin!InitExtensions+51>
+   0x10041fac2 <XWin!InitExtensions+18>:        mov    $0x1,%r8d
+   0x10041fac8 <XWin!InitExtensions+24>:        mov    $0x17,%edx
+   0x10041facd <XWin!InitExtensions+29>:
+    lea    0x17af6c(%rip),%rcx        # 0x10059aa40 <XWin!CLSID_TaskbarList+3792>
+   0x10041fad4 <XWin!InitExtensions+36>:        movl   $0x1,0x1d22a2(%rip)        # 0x1005f1d80 <g_fButton+80>
+   0x10041fade <XWin!InitExtensions+46>:        call   0x10041f9c0 <XWin!LoadExtensionList>
+   0x10041fae3 <XWin!InitExtensions+51>:        mov    0x1d229b(%rip),%edx        # 0x1005f1d84 <g_fButton+84>
+   0x10041fae9 <XWin!InitExtensions+57>:        test   %edx,%edx
+   0x10041faeb <XWin!InitExtensions+59>:        jle    0x10041fb46 <XWin!InitExtensions+150>
+   0x10041faed <XWin!InitExtensions+61>:        xor    %edi,%edi
+   0x10041faef <XWin!InitExtensions+63>:        xor    %esi,%esi
+   0x10041faf1 <XWin!InitExtensions+65>:
+    lea    0x17ae47(%rip),%rbp        # 0x10059a93f <XWin!CLSID_TaskbarList+3535>
+   0x10041faf8 <XWin!InitExtensions+72>:        nopl   0x0(%rax,%rax,1)
+(gdb) info symbol 0x10041fab0
+XWin!InitExtensions in section .text of /usr/bin/XWin.exe
+(gdb) info address AddExtension
+Symbol "AddExtension" is at 0x10048a4e0 in a file compiled without debugging.
+(gdb)
+
+0x0000000100479616 in dix_main ()
+(gdb) set $myname = (char*)malloc(16)
+(gdb) call strcpy($myname, "CyXV")
+'strcpy' has unknown return type; cast the call to its declared return type
+(gdb) p (void*)AddExtension($myname, 0, 0, (void*)0x10041fab8, (void*)0x10041fab8, 0, 0)
+$4 = (void *) 0xa0004ba30
+(gdb) info address ExtensionEntry
+No symbol "ExtensionEntry" in current context.
+(gdb) call (char*)strcpy($myname, "XVideo")
+$5 = 0x2f7ee90 "XVideo"
+(gdb) p (void*)AddExtension($myname, 0, 0, (void*)0x10041fab8, (void*)0x10041fab8, 0, 0)
+$6 = (void *) 0xa00049f90
+(gdb)
+
+root@PC44 ~
+$ DISPLAY=:0 xdpyinfo | grep -E "CyXV|XVideo"
+    XVideo
+
+root@PC44 ~
+$
+
+这一瞬间才感到真正跟银狼一样破解的感觉，好爽
+
+root@PC44 ~
+$ DISPLAY=:0 xdpyinfo -ext XVideo
+XVideo extension not supported by xdpyinfo
+name of display:    :0
+version number:    11.0
+vendor string:    The Cygwin/X Project
+vendor release number:    12101021
+maximum request size:  16777212 bytes
+motion buffer size:  256
+bitmap unit, bit order, padding:    32, LSBFirst, 32
+image byte order:    LSBFirst
+number of supported pixmap formats:    7
+supported pixmap formats:
+    depth 1, bits_per_pixel 1, scanline_pad 32
+    depth 4, bits_per_pixel 8, scanline_pad 32
+    depth 8, bits_per_pixel 8, scanline_pad 32
+    depth 15, bits_per_pixel 16, scanline_pad 32
+    depth 16, bits_per_pixel 16, scanline_pad 32
+    depth 24, bits_per_pixel 32, scanline_pad 32
+    depth 32, bits_per_pixel 32, scanline_pad 32
+keycode range:    minimum 8, maximum 255
+focus:  PointerRoot
+number of extensions:    24
+    BIG-REQUESTS
+    Composite
+    DAMAGE
+    DOUBLE-BUFFER
+    GLX
+    Generic Event Extension
+    MIT-SCREEN-SAVER
+    MIT-SHM
+    Present
+    RANDR
+    RECORD
+    RENDER
+    SHAPE
+    SYNC
+    Windows-DRI
+    X-Resource
+    XC-MISC
+    XFIXES
+    XFree86-Bigfont
+    XINERAMA
+    XInputExtension
+    XKEYBOARD
+    XTEST
+    XVideo
+default screen number:    0
+number of screens:    1
+
+screen #0:
+  dimensions:    2560x1440 pixels (677x381 millimeters)
+  resolution:    96x96 dots per inch
+  depths (7):    24, 1, 4, 8, 15, 16, 32
+  root window id:    0x36e
+  depth of root window:    24 planes
+  number of colormaps:    minimum 1, maximum 1
+  default colormap:    0x20
+  default number of colormap cells:    256
+  preallocated pixels:    black 0, white 16777215
+  options:    backing-store WHEN MAPPED, save-unders NO
+  largest cursor:    32x32
+  current input event mask:    0x80004
+    ButtonPressMask          SubstructureNotifyMask
+  number of visuals:    177
+  default visual id:  0x21
+  visual:
+    visual id:    0x21
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2be
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2bf
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c0
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c1
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c2
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c3
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c4
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c5
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c6
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c7
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c8
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2c9
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ca
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2cb
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2cc
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2cd
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ce
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2cf
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d0
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d1
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d2
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d3
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d4
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d5
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d6
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d7
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d8
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2d9
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2da
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2db
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2dc
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2dd
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2de
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2df
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e0
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e1
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e2
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e3
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e4
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e5
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e6
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e7
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e8
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2e9
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ea
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2eb
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ec
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ed
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ee
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ef
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f0
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f1
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f2
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f3
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f4
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f5
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f6
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f7
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f8
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2f9
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2fa
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2fb
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2fc
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2fd
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2fe
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x2ff
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x300
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x301
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x302
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x303
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x304
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x305
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x306
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x307
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x308
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x309
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x30a
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x30b
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x30c
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x30d
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x30e
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x30f
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x310
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x311
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x312
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x313
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x314
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x315
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x316
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x317
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x318
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x319
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x31a
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x31b
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x31c
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x31d
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x31e
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x31f
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x320
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x321
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x322
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x323
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x324
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x325
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x326
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x327
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x328
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x329
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x32a
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x32b
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x32c
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x32d
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x32e
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x32f
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x330
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x331
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x332
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x333
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x334
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x335
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x336
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x337
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x338
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x339
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x33a
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x33b
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x33c
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x33d
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x33e
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x33f
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x340
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x341
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x342
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x343
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x344
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x345
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x346
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x347
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x348
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x349
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x34a
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x34b
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x34c
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x34d
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x34e
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x34f
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x350
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x351
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x352
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x353
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x354
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x355
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x356
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x357
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x358
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x359
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x35a
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x35b
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x35c
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x35d
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x35e
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x35f
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x360
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x361
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x362
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x363
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x364
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x365
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x366
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x367
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x368
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x369
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x36a
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x36b
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x36c
+    class:    TrueColor
+    depth:    24 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x43
+    class:    TrueColor
+    depth:    32 planes
+    available colormap entries:    256 per subfield
+    red, green, blue masks:    0xff0000, 0xff00, 0xff
+    significant bits in color specification:    8 bits
+
+root@PC44 ~
+$
+
+(gdb) info files
+Symbols from "/usr/bin/XWin".
+Native process:
+        Using the running image of child process 290440.
+        While running this, GDB does not access memory from...
+Local exec file:
+        `/usr/bin/XWin', file type pei-x86-64.
+        Entry point: 0x100401000
+        0x0000000100401000 - 0x0000000100585090 is .text
+        0x0000000100586000 - 0x000000010058d100 is .data
+        0x000000010058e000 - 0x00000001005cc7a8 is .rdata
+        0x00000001005cd000 - 0x00000001005cd035 is .buildid
+        0x00000001005ce000 - 0x00000001005de890 is .pdata
+        0x00000001005df000 - 0x00000001005efac0 is .xdata
+        0x00000001005f0000 - 0x000000010062dd60 is .bss
+        0x000000010062e000 - 0x000000010066478b is .edata
+        0x0000000100665000 - 0x000000010066b6ec is .idata
+        0x000000010066c000 - 0x00000001006be660 is .rsrc
+        0x00000001006bf000 - 0x00000001006c0dcc is .reloc
+        0x00007ffd4b8d1000 - 0x00007ffd4b9ea40e is .text in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4b9eb000 - 0x00007ffd4b9eb1f9 is RT in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4b9ec000 - 0x00007ffd4b9ec432 is PAGE in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4b9ed000 - 0x00007ffd4ba35031 is .rdata in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4ba36000 - 0x00007ffd4ba3a000 is .data in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4ba42000 - 0x00007ffd4ba504fc is .pdata in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4ba51000 - 0x00007ffd4ba54520 is .mrdata in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4ba55000 - 0x00007ffd4ba55008 is .00cfg in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4ba56000 - 0x00007ffd4bac60a0 is .rsrc in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4bac7000 - 0x00007ffd4bac754c is .reloc in /cygdrive/c/windows/SYSTEM32/ntdll.dll
+        0x00007ffd4a971000 - 0x00007ffd4a9ee3fb is .text in /cygdrive/c/windows/System32/KERNEL32.DLL
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd4a9ef000 - 0x00007ffd4aa21e96 is .rdata in /cygdrive/c/windows/System32/KERNEL32.DLL
+        0x00007ffd4aa22000 - 0x00007ffd4aa22600 is .data in /cygdrive/c/windows/System32/KERNEL32.DLL
+        0x00007ffd4aa24000 - 0x00007ffd4aa29550 is .pdata in /cygdrive/c/windows/System32/KERNEL32.DLL
+        0x00007ffd4aa2a000 - 0x00007ffd4aa2a068 is .didat in /cygdrive/c/windows/System32/KERNEL32.DLL
+        0x00007ffd4aa2b000 - 0x00007ffd4aa2b520 is .rsrc in /cygdrive/c/windows/System32/KERNEL32.DLL
+        0x00007ffd4aa2c000 - 0x00007ffd4aa2c300 is .reloc in /cygdrive/c/windows/System32/KERNEL32.DLL
+        0x00007ffd49611000 - 0x00007ffd49725fad is .text in /cygdrive/c/windows/System32/KERNELBASE.dll
+        0x00007ffd49726000 - 0x00007ffd4989f588 is .rdata in /cygdrive/c/windows/System32/KERNELBASE.dll
+        0x00007ffd498a0000 - 0x00007ffd498a1400 is .data in /cygdrive/c/windows/System32/KERNELBASE.dll
+        0x00007ffd498a5000 - 0x00007ffd498b3c28 is .pdata in /cygdrive/c/windows/System32/KERNELBASE.dll
+        0x00007ffd498b4000 - 0x00007ffd498b46c8 is .didat in /cygdrive/c/windows/System32/KERNELBASE.dll
+        0x00007ffd498b5000 - 0x00007ffd498b5548 is .rsrc in /cygdrive/c/windows/System32/KERNELBASE.dll
+        0x00007ffd498b6000 - 0x00007ffd498ddc6c is .reloc in /cygdrive/c/windows/System32/KERNELBASE.dll
+        0x00007ffd4ab11000 - 0x00007ffd4ab78577 is .text in /cygdrive/c/windows/System32/ADVAPI32.dll
+        0x00007ffd4ab79000 - 0x00007ffd4abaf296 is .rdata in /cygdrive/c/windows/System32/ADVAPI32.dll
+        0x00007ffd4abb0000 - 0x00007ffd4abb2800 is .data in /cygdrive/c/windows/System32/ADVAPI32.dll
+        0x00007ffd4abb5000 - 0x00007ffd4abb9350 is .pdata in /cygdrive/c/windows/System32/ADVAPI32.dll
+        0x00007ffd4abba000 - 0x00007ffd4abba468 is .didat in /cygdrive/c/windows/System32/ADVAPI32.dll
+        0x00007ffd4abbb000 - 0x00007ffd4abbb5c8 is .rsrc in /cygdrive/c/windows/System32/ADVAPI32.dll
+        0x00007ffd4abbc000 - 0x00007ffd4abbd8f4 is .reloc in /cygdrive/c/windows/System32/ADVAPI32.dll
+        0x00007ffd317e1000 - 0x00007ffd319b4e80 is .text in /usr/bin/cygwin1.dll
+        0x00007ffd319b5000 - 0x00007ffd319b88f0 is .autoload_text in /usr/bin/cygwin1.dll
+        0x00007ffd319b9000 - 0x00007ffd31a37da0 is .data in /usr/bin/cygwin1.dll
+        0x00007ffd31a38000 - 0x00007ffd31a9f5c0 is .rdata in /usr/bin/cygwin1.dll
+        0x00007ffd31aa0000 - 0x00007ffd31aa0035 is .buildid in /usr/bin/cygwin1.dll
+        0x00007ffd31aa1000 - 0x00007ffd31ab2808 is .pdata in /usr/bin/cygwin1.dll
+        0x00007ffd31ab3000 - 0x00007ffd31ac48b0 is .xdata in /usr/bin/cygwin1.dll
+        0x00007ffd31ac5000 - 0x00007ffd31aed4f0 is .bss in /usr/bin/cygwin1.dll
+        0x00007ffd31aee000 - 0x00007ffd31af6ede is .edata in /usr/bin/cygwin1.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd31af7000 - 0x00007ffd31affdf8 is .reloc in /usr/bin/cygwin1.dll
+        0x00007ffd31b00000 - 0x00007ffd31b0c1e0 is .cygwin_dll_common in /usr/bin/cygwin1.dll
+        0x00007ffd31b0d000 - 0x00007ffd31b10c30 is .idata in /usr/bin/cygwin1.dll
+        0x00007ffd31b11000 - 0x00007ffd31b11408 is .rsrc in /usr/bin/cygwin1.dll
+        0x00007ffd4a7a1000 - 0x00007ffd4a8156d1 is .text in /cygdrive/c/windows/System32/msvcrt.dll
+        0x00007ffd4a816000 - 0x00007ffd4a82ecc0 is .rdata in /cygdrive/c/windows/System32/msvcrt.dll
+        0x00007ffd4a82f000 - 0x00007ffd4a834600 is .data in /cygdrive/c/windows/System32/msvcrt.dll
+        0x00007ffd4a837000 - 0x00007ffd4a83b65c is .pdata in /cygdrive/c/windows/System32/msvcrt.dll
+        0x00007ffd4a83c000 - 0x00007ffd4a83c3f0 is .rsrc in /cygdrive/c/windows/System32/msvcrt.dll
+        0x00007ffd4a83d000 - 0x00007ffd4a83d4a8 is .reloc in /cygdrive/c/windows/System32/msvcrt.dll
+        0x00000003fb041000 - 0x00000003fb042318 is .text in /usr/bin/cygXau-6.dll
+        0x00000003fb043000 - 0x00000003fb043060 is .data in /usr/bin/cygXau-6.dll
+        0x00000003fb044000 - 0x00000003fb044348 is .rdata in /usr/bin/cygXau-6.dll
+        0x00000003fb045000 - 0x00000003fb045035 is .buildid in /usr/bin/cygXau-6.dll
+        0x00000003fb046000 - 0x00000003fb04612c is .pdata in /usr/bin/cygXau-6.dll
+        0x00000003fb047000 - 0x00000003fb047108 is .xdata in /usr/bin/cygXau-6.dll
+        0x00000003fb048000 - 0x00000003fb0481f0 is .bss in /usr/bin/cygXau-6.dll
+        0x00000003fb049000 - 0x00000003fb049139 is .edata in /usr/bin/cygXau-6.dll
+        0x00000003fb04a000 - 0x00000003fb04a504 is .idata in /usr/bin/cygXau-6.dll
+        0x00000003fb04b000 - 0x00000003fb04b024 is .reloc in /usr/bin/cygXau-6.dll
+        0x00000003faf11000 - 0x00000003faf38008 is .text in /usr/bin/cygXfont2-2.dll
+        0x00000003faf39000 - 0x00000003faf39ea0 is .data in /usr/bin/cygXfont2-2.dll
+        0x00000003faf3a000 - 0x00000003faf403c8 is .rdata in /usr/bin/cygXfont2-2.dll
+        0x00000003faf41000 - 0x00000003faf41035 is .buildid in /usr/bin/cygXfont2-2.dll
+        0x00000003faf42000 - 0x00000003faf43170 is .pdata in /usr/bin/cygXfont2-2.dll
+        0x00000003faf44000 - 0x00000003faf45338 is .xdata in /usr/bin/cygXfont2-2.dll
+        0x00000003faf46000 - 0x00000003faf46890 is .bss in /usr/bin/cygXfont2-2.dll
+        0x00000003faf47000 - 0x00000003faf48b6a is .edata in /usr/bin/cygXfont2-2.dll
+        0x00000003faf49000 - 0x00000003faf4a308 is .idata in /usr/bin/cygXfont2-2.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003faf4b000 - 0x00000003faf4b32c is .reloc in /usr/bin/cygXfont2-2.dll
+        0x00007ffd4a161000 - 0x00007ffd4a1c5b71 is .text in /cygdrive/c/windows/System32/sechost.dll
+        0x00007ffd4a1c6000 - 0x00007ffd4a1ed5fa is .rdata in /cygdrive/c/windows/System32/sechost.dll
+        0x00007ffd4a1ee000 - 0x00007ffd4a1f0c00 is .data in /cygdrive/c/windows/System32/sechost.dll
+        0x00007ffd4a1f2000 - 0x00007ffd4a1f641c is .pdata in /cygdrive/c/windows/System32/sechost.dll
+        0x00007ffd4a1f7000 - 0x00007ffd4a1f7120 is .didat in /cygdrive/c/windows/System32/sechost.dll
+        0x00007ffd4a1f8000 - 0x00007ffd4a1f92b8 is .rsrc in /cygdrive/c/windows/System32/sechost.dll
+        0x00007ffd4a1fa000 - 0x00007ffd4a1fb464 is .reloc in /cygdrive/c/windows/System32/sechost.dll
+        0x00007ffd4a551000 - 0x00007ffd4a62a6d6 is .text in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00007ffd4a62b000 - 0x00007ffd4a631c54 is .ndr64 in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00007ffd4a632000 - 0x00007ffd4a65d022 is .rdata in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00007ffd4a65e000 - 0x00007ffd4a65e800 is .data in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00007ffd4a660000 - 0x00007ffd4a66cab0 is .pdata in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00007ffd4a66d000 - 0x00007ffd4a66d288 is .didat in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00007ffd4a66e000 - 0x00007ffd4a672560 is .rsrc in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00007ffd4a673000 - 0x00007ffd4a6747bc is .reloc in /cygdrive/c/windows/System32/RPCRT4.dll
+        0x00000003f7271000 - 0x00000003f72ff570 is .text in /usr/bin/cygpixman-1-0.dll
+        0x00000003f7300000 - 0x00000003f7300100 is .data in /usr/bin/cygpixman-1-0.dll
+        0x00000003f7301000 - 0x00000003f730d8f0 is .rdata in /usr/bin/cygpixman-1-0.dll
+        0x00000003f730e000 - 0x00000003f730e035 is .buildid in /usr/bin/cygpixman-1-0.dll
+        0x00000003f730f000 - 0x00000003f7312390 is .pdata in /usr/bin/cygpixman-1-0.dll
+        0x00000003f7313000 - 0x00000003f7317e84 is .xdata in /usr/bin/cygpixman-1-0.dll
+        0x00000003f7318000 - 0x00000003f73182f0 is .bss in /usr/bin/cygpixman-1-0.dll
+        0x00000003f7319000 - 0x00000003f731abf7 is .edata in /usr/bin/cygpixman-1-0.dll
+        0x00000003f731b000 - 0x00000003f731b4ec is .idata in /usr/bin/cygpixman-1-0.dll
+        0x00000003f731c000 - 0x00000003f731c9c0 is .reloc in /usr/bin/cygpixman-1-0.dll
+        0x00000003f6841000 - 0x00000003f685c0e0 is .text in /usr/bin/cygtirpc-3.dll
+        0x00000003f685d000 - 0x00000003f685d360 is .data in /usr/bin/cygtirpc-3.dll
+        0x00000003f685e000 - 0x00000003f6862048 is .rdata in /usr/bin/cygtirpc-3.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003f6863000 - 0x00000003f6863035 is .buildid in /usr/bin/cygtirpc-3.dll
+        0x00000003f6864000 - 0x00000003f68654b8 is .pdata in /usr/bin/cygtirpc-3.dll
+        0x00000003f6866000 - 0x00000003f686756c is .xdata in /usr/bin/cygtirpc-3.dll
+        0x00000003f6868000 - 0x00000003f6868730 is .bss in /usr/bin/cygtirpc-3.dll
+        0x00000003f6869000 - 0x00000003f686aa90 is .edata in /usr/bin/cygtirpc-3.dll
+        0x00000003f686b000 - 0x00000003f686c644 is .idata in /usr/bin/cygtirpc-3.dll
+        0x00000003f686d000 - 0x00000003f686d194 is .reloc in /usr/bin/cygtirpc-3.dll
+        0x00000003faf81000 - 0x00000003faf83068 is .text in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf84000 - 0x00000003faf84060 is .data in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf85000 - 0x00000003faf862f8 is .rdata in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf87000 - 0x00000003faf87035 is .buildid in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf88000 - 0x00000003faf88294 is .pdata in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf89000 - 0x00000003faf891e8 is .xdata in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf8a000 - 0x00000003faf8a1d0 is .bss in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf8b000 - 0x00000003faf8b507 is .edata in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf8c000 - 0x00000003faf8c31c is .idata in /usr/bin/cygXdmcp-6.dll
+        0x00000003faf8d000 - 0x00000003faf8d024 is .reloc in /usr/bin/cygXdmcp-6.dll
+        0x00007ffd4a011000 - 0x00007ffd4a01eec5 is .text in /cygdrive/c/windows/System32/GDI32.dll
+        0x00007ffd4a01f000 - 0x00007ffd4a032994 is .rdata in /cygdrive/c/windows/System32/GDI32.dll
+        0x00007ffd4a033000 - 0x00007ffd4a033200 is .data in /cygdrive/c/windows/System32/GDI32.dll
+        0x00007ffd4a034000 - 0x00007ffd4a035068 is .pdata in /cygdrive/c/windows/System32/GDI32.dll
+        0x00007ffd4a036000 - 0x00007ffd4a037188 is .didat in /cygdrive/c/windows/System32/GDI32.dll
+        0x00007ffd4a038000 - 0x00007ffd4a0383d8 is .rsrc in /cygdrive/c/windows/System32/GDI32.dll
+        0x00007ffd4a039000 - 0x00007ffd4a03949c is .reloc in /cygdrive/c/windows/System32/GDI32.dll
+        0x00000004498e1000 - 0x00000004498e1c60 is .text in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498e2000 - 0x00000004498e2060 is .data in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498e3000 - 0x00000004498e3418 is .rdata in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498e4000 - 0x00000004498e4035 is .buildid in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498e5000 - 0x00000004498e518c is .pdata in /usr/bin/cygxcb-composite-0.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000004498e6000 - 0x00000004498e60e0 is .xdata in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498e7000 - 0x00000004498e71d0 is .bss in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498e8000 - 0x00000004498e845f is .edata in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498e9000 - 0x00000004498e9288 is .idata in /usr/bin/cygxcb-composite-0.dll
+        0x00000004498ea000 - 0x00000004498ea03c is .reloc in /usr/bin/cygxcb-composite-0.dll
+        0x00007ffd490f1000 - 0x00007ffd490fb4c2 is .text in /cygdrive/c/windows/System32/win32u.dll
+        0x00007ffd490fc000 - 0x00007ffd4910ae68 is .rdata in /cygdrive/c/windows/System32/win32u.dll
+        0x00007ffd4910b000 - 0x00007ffd4910b200 is .data in /cygdrive/c/windows/System32/win32u.dll
+        0x00007ffd4910c000 - 0x00007ffd4910fdbc is .pdata in /cygdrive/c/windows/System32/win32u.dll
+        0x00007ffd49110000 - 0x00007ffd491103d8 is .rsrc in /cygdrive/c/windows/System32/win32u.dll
+        0x00007ffd49111000 - 0x00007ffd49111014 is .reloc in /cygdrive/c/windows/System32/win32u.dll
+        0x00000003f6471000 - 0x00000003f6475e68 is .text in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f6476000 - 0x00000003f6476060 is .data in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f6477000 - 0x00000003f6478138 is .rdata in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f6479000 - 0x00000003f6479035 is .buildid in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f647a000 - 0x00000003f647aa20 is .pdata in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f647b000 - 0x00000003f647b70c is .xdata in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f647c000 - 0x00000003f647c1d0 is .bss in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f647d000 - 0x00000003f647f23b is .edata in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f6480000 - 0x00000003f6480688 is .idata in /usr/bin/cygxcb-ewmh-2.dll
+        0x00000003f6481000 - 0x00000003f64810c8 is .reloc in /usr/bin/cygxcb-ewmh-2.dll
+        0x00007ffd49261000 - 0x00007ffd492fc756 is .text in /cygdrive/c/windows/System32/gdi32full.dll
+        0x00007ffd492fd000 - 0x00007ffd49349fe8 is .rdata in /cygdrive/c/windows/System32/gdi32full.dll
+        0x00007ffd4934a000 - 0x00007ffd4934a400 is .data in /cygdrive/c/windows/System32/gdi32full.dll
+        0x00007ffd4934f000 - 0x00007ffd49355828 is .pdata in /cygdrive/c/windows/System32/gdi32full.dll
+        0x00007ffd49356000 - 0x00007ffd493560d8 is .didat in /cygdrive/c/windows/System32/gdi32full.dll
+        0x00007ffd49357000 - 0x00007ffd493689c8 is .rsrc in /cygdrive/c/windows/System32/gdi32full.dll
+        0x00007ffd49369000 - 0x00007ffd4936a478 is .reloc in /cygdrive/c/windows/System32/gdi32full.dll
+        0x00000003f6461000 - 0x00000003f6462a48 is .text in /usr/bin/cygxcb-icccm-4.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003f6463000 - 0x00000003f6463060 is .data in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f6464000 - 0x00000003f64641a0 is .rdata in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f6465000 - 0x00000003f6465035 is .buildid in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f6466000 - 0x00000003f6466474 is .pdata in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f6467000 - 0x00000003f64672b0 is .xdata in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f6468000 - 0x00000003f64681d0 is .bss in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f6469000 - 0x00000003f6469e5f is .edata in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f646a000 - 0x00000003f646a3a4 is .idata in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f646b000 - 0x00000003f646b018 is .reloc in /usr/bin/cygxcb-icccm-4.dll
+        0x00000003f6451000 - 0x00000003f6453078 is .text in /usr/bin/cygxcb-image-0.dll
+        0x00000003f6454000 - 0x00000003f6454060 is .data in /usr/bin/cygxcb-image-0.dll
+        0x00000003f6455000 - 0x00000003f6455458 is .rdata in /usr/bin/cygxcb-image-0.dll
+        0x00000003f6456000 - 0x00000003f6456035 is .buildid in /usr/bin/cygxcb-image-0.dll
+        0x00000003f6457000 - 0x00000003f6457168 is .pdata in /usr/bin/cygxcb-image-0.dll
+        0x00000003f6458000 - 0x00000003f645814c is .xdata in /usr/bin/cygxcb-image-0.dll
+        0x00000003f6459000 - 0x00000003f64591d0 is .bss in /usr/bin/cygxcb-image-0.dll
+        0x00000003f645a000 - 0x00000003f645a242 is .edata in /usr/bin/cygxcb-image-0.dll
+        0x00000003f645b000 - 0x00000003f645b614 is .idata in /usr/bin/cygxcb-image-0.dll
+        0x00000003f645c000 - 0x00000003f645c024 is .reloc in /usr/bin/cygxcb-image-0.dll
+        0x00000003f6411000 - 0x00000003f64124f8 is .text in /usr/bin/cygxcb-util-1.dll
+        0x00000003f6413000 - 0x00000003f6413060 is .data in /usr/bin/cygxcb-util-1.dll
+        0x00000003f6414000 - 0x00000003f6415258 is .rdata in /usr/bin/cygxcb-util-1.dll
+        0x00000003f6416000 - 0x00000003f6416035 is .buildid in /usr/bin/cygxcb-util-1.dll
+        0x00000003f6417000 - 0x00000003f64171e0 is .pdata in /usr/bin/cygxcb-util-1.dll
+        0x00000003f6418000 - 0x00000003f6418184 is .xdata in /usr/bin/cygxcb-util-1.dll
+        0x00000003f6419000 - 0x00000003f64191d0 is .bss in /usr/bin/cygxcb-util-1.dll
+        0x00000003f641a000 - 0x00000003f641a407 is .edata in /usr/bin/cygxcb-util-1.dll
+        0x00000003f641b000 - 0x00000003f641b6a8 is .idata in /usr/bin/cygxcb-util-1.dll
+        0x00000003f641c000 - 0x00000003f641c18c is .reloc in /usr/bin/cygxcb-util-1.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd49571000 - 0x00007ffd495c4f7e is .text in /cygdrive/c/windows/System32/msvcp_win.dll
+        0x00007ffd495c5000 - 0x00007ffd496009b6 is .rdata in /cygdrive/c/windows/System32/msvcp_win.dll
+        0x00007ffd49601000 - 0x00007ffd49602c00 is .data in /cygdrive/c/windows/System32/msvcp_win.dll
+        0x00007ffd49605000 - 0x00007ffd49609cf8 is .pdata in /cygdrive/c/windows/System32/msvcp_win.dll
+        0x00007ffd4960a000 - 0x00007ffd4960a040 is .didat in /cygdrive/c/windows/System32/msvcp_win.dll
+        0x00007ffd4960b000 - 0x00007ffd4960b410 is .rsrc in /cygdrive/c/windows/System32/msvcp_win.dll
+        0x00007ffd4960c000 - 0x00007ffd4960c7e4 is .reloc in /cygdrive/c/windows/System32/msvcp_win.dll
+        0x00007ffd48ff1000 - 0x00007ffd490a4920 is .text in /cygdrive/c/windows/System32/ucrtbase.dll
+        0x00007ffd490a5000 - 0x00007ffd490de14e is .rdata in /cygdrive/c/windows/System32/ucrtbase.dll
+        0x00007ffd490df000 - 0x00007ffd490e0200 is .data in /cygdrive/c/windows/System32/ucrtbase.dll
+        0x00007ffd490e2000 - 0x00007ffd490ed688 is .pdata in /cygdrive/c/windows/System32/ucrtbase.dll
+        0x00007ffd490ee000 - 0x00007ffd490ee410 is .rsrc in /cygdrive/c/windows/System32/ucrtbase.dll
+        0x00007ffd490ef000 - 0x00007ffd490efaf8 is .reloc in /cygdrive/c/windows/System32/ucrtbase.dll
+        0x00000004cd4d1000 - 0x00000004cd4e1b60 is .text in /usr/bin/cygxcb-1.dll
+        0x00000004cd4e2000 - 0x00000004cd4e20a0 is .data in /usr/bin/cygxcb-1.dll
+        0x00000004cd4e3000 - 0x00000004cd4e57f8 is .rdata in /usr/bin/cygxcb-1.dll
+        0x00000004cd4e6000 - 0x00000004cd4e6035 is .buildid in /usr/bin/cygxcb-1.dll
+        0x00000004cd4e7000 - 0x00000004cd4e9220 is .pdata in /usr/bin/cygxcb-1.dll
+        0x00000004cd4ea000 - 0x00000004cd4eb30c is .xdata in /usr/bin/cygxcb-1.dll
+        0x00000004cd4ec000 - 0x00000004cd4ec1f0 is .bss in /usr/bin/cygxcb-1.dll
+        0x00000004cd4ed000 - 0x00000004cd4f3090 is .edata in /usr/bin/cygxcb-1.dll
+        0x00000004cd4f4000 - 0x00000004cd4f4944 is .idata in /usr/bin/cygxcb-1.dll
+        0x00000004cd4f5000 - 0x00000004cd4f5038 is .reloc in /usr/bin/cygxcb-1.dll
+        0x00000005b2b71000 - 0x00000005b2b73580 is .text in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b74000 - 0x00000005b2b74060 is .data in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b75000 - 0x00000005b2b75a88 is .rdata in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b76000 - 0x00000005b2b76035 is .buildid in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b77000 - 0x00000005b2b77630 is .pdata in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b78000 - 0x00000005b2b7833c is .xdata in /usr/bin/cygxcb-xfixes-0.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000005b2b79000 - 0x00000005b2b791d0 is .bss in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b7a000 - 0x00000005b2b7b5d5 is .edata in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b7c000 - 0x00000005b2b7c288 is .idata in /usr/bin/cygxcb-xfixes-0.dll
+        0x00000005b2b7d000 - 0x00000005b2b7d0a4 is .reloc in /usr/bin/cygxcb-xfixes-0.dll
+        0x00007ffd4a2b1000 - 0x00007ffd4a3407f0 is .text in /cygdrive/c/windows/System32/USER32.dll
+        0x00007ffd4a341000 - 0x00007ffd4a36194e is .rdata in /cygdrive/c/windows/System32/USER32.dll
+        0x00007ffd4a362000 - 0x00007ffd4a362a00 is .data in /cygdrive/c/windows/System32/USER32.dll
+        0x00007ffd4a364000 - 0x00007ffd4a36b020 is .pdata in /cygdrive/c/windows/System32/USER32.dll
+        0x00007ffd4a36c000 - 0x00007ffd4a36c0f0 is .didat in /cygdrive/c/windows/System32/USER32.dll
+        0x00007ffd4a36d000 - 0x00007ffd4a44e1a0 is .rsrc in /cygdrive/c/windows/System32/USER32.dll
+        0x00007ffd4a44f000 - 0x00007ffd4a44f42c is .reloc in /cygdrive/c/windows/System32/USER32.dll
+        0x00000003f9aa1000 - 0x00000003f9aa4208 is .text in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aa5000 - 0x00000003f9aa5ee0 is .data in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aa6000 - 0x00000003f9aa6e58 is .rdata in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aa7000 - 0x00000003f9aa7035 is .buildid in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aa8000 - 0x00000003f9aa8240 is .pdata in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aa9000 - 0x00000003f9aa917c is .xdata in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aaa000 - 0x00000003f9aaa6b0 is .bss in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aab000 - 0x00000003f9aab207 is .edata in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aac000 - 0x00000003f9aac488 is .idata in /usr/bin/cygfontenc-1.dll
+        0x00000003f9aad000 - 0x00000003f9aad0b8 is .reloc in /usr/bin/cygfontenc-1.dll
+        0x00000003f99c1000 - 0x00000003f9a4b8f8 is .text in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a4c000 - 0x00000003f9a4c060 is .data in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a4d000 - 0x00000003f9a6bba8 is .rdata in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a6c000 - 0x00000003f9a6c035 is .buildid in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a6d000 - 0x00000003f9a71464 is .pdata in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a72000 - 0x00000003f9a766bc is .xdata in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a77000 - 0x00000003f9a771d0 is .bss in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a78000 - 0x00000003f9a799c5 is .edata in /usr/bin/cygfreetype-6.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003f9a7a000 - 0x00000003f9a7ab80 is .idata in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a7b000 - 0x00000003f9a7b3a0 is .rsrc in /usr/bin/cygfreetype-6.dll
+        0x00000003f9a7c000 - 0x00000003f9a7cb9c is .reloc in /usr/bin/cygfreetype-6.dll
+        0x00000003fab91000 - 0x00000003fab9ddd0 is .text in /usr/bin/cygbz2-1.dll
+        0x00000003fab9e000 - 0x00000003fab9ec60 is .data in /usr/bin/cygbz2-1.dll
+        0x00000003fab9f000 - 0x00000003fab9fe40 is .rdata in /usr/bin/cygbz2-1.dll
+        0x00000003faba0000 - 0x00000003faba0035 is .buildid in /usr/bin/cygbz2-1.dll
+        0x00000003faba1000 - 0x00000003faba12ac is .pdata in /usr/bin/cygbz2-1.dll
+        0x00000003faba2000 - 0x00000003faba22a0 is .xdata in /usr/bin/cygbz2-1.dll
+        0x00000003faba3000 - 0x00000003faba31d0 is .bss in /usr/bin/cygbz2-1.dll
+        0x00000003faba4000 - 0x00000003faba4414 is .edata in /usr/bin/cygbz2-1.dll
+        0x00000003faba5000 - 0x00000003faba5494 is .idata in /usr/bin/cygbz2-1.dll
+        0x00000003faba6000 - 0x00000003faba603c is .reloc in /usr/bin/cygbz2-1.dll
+        0x00007ffd4a841000 - 0x00007ffd4a90c1c4 is .text in /cygdrive/c/windows/System32/ole32.dll
+        0x00007ffd4a90d000 - 0x00007ffd4a93e41e is .rdata in /cygdrive/c/windows/System32/ole32.dll
+        0x00007ffd4a93f000 - 0x00007ffd4a93fa00 is .data in /cygdrive/c/windows/System32/ole32.dll
+        0x00007ffd4a942000 - 0x00007ffd4a94ffe0 is .pdata in /cygdrive/c/windows/System32/ole32.dll
+        0x00007ffd4a950000 - 0x00007ffd4a9506c8 is .didat in /cygdrive/c/windows/System32/ole32.dll
+        0x00007ffd4a951000 - 0x00007ffd4a966ab0 is .rsrc in /cygdrive/c/windows/System32/ole32.dll
+        0x00007ffd4a967000 - 0x00007ffd4a969158 is .reloc in /cygdrive/c/windows/System32/ole32.dll
+        0x00000003f6251000 - 0x00000003f625f920 is .text in /usr/bin/cygz.dll
+        0x00000003f6260000 - 0x00000003f6260060 is .data in /usr/bin/cygz.dll
+        0x00000003f6261000 - 0x00000003f6265750 is .rdata in /usr/bin/cygz.dll
+        0x00000003f6266000 - 0x00000003f6266035 is .buildid in /usr/bin/cygz.dll
+        0x00000003f6267000 - 0x00000003f6267720 is .pdata in /usr/bin/cygz.dll
+        0x00000003f6268000 - 0x00000003f6268688 is .xdata in /usr/bin/cygz.dll
+        0x00000003f6269000 - 0x00000003f62691d0 is .bss in /usr/bin/cygz.dll
+        0x00000003f626a000 - 0x00000003f626a860 is .edata in /usr/bin/cygz.dll
+        0x00000003f626b000 - 0x00000003f626b444 is .idata in /usr/bin/cygz.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003f626c000 - 0x00000003f626c388 is .rsrc in /usr/bin/cygz.dll
+        0x00000003f626d000 - 0x00000003f626d068 is .reloc in /usr/bin/cygz.dll
+        0x00000003f8ed1000 - 0x00000003f8f02a88 is .text in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f03000 - 0x00000003f8f03968 is .data in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f04000 - 0x00000003f8f0b1f4 is .rdata in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f0c000 - 0x00000003f8f0c035 is .buildid in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f0d000 - 0x00000003f8f0e794 is .pdata in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f0f000 - 0x00000003f8f10a50 is .xdata in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f11000 - 0x00000003f8f11270 is .bss in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f12000 - 0x00000003f8f15bf1 is .edata in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f16000 - 0x00000003f8f19064 is .idata in /usr/bin/cyggssapi_krb5-2.dll
+        0x00000003f8f1a000 - 0x00000003f8f1a518 is .reloc in /usr/bin/cyggssapi_krb5-2.dll
+        0x00007ffd4abc1000 - 0x00007ffd4adf4224 is .text in /cygdrive/c/windows/System32/combase.dll
+        0x00007ffd4adf5000 - 0x00007ffd4adf9e0d is .proxy in /cygdrive/c/windows/System32/combase.dll
+        0x00007ffd4adfa000 - 0x00007ffd4aebfbd4 is .rdata in /cygdrive/c/windows/System32/combase.dll
+        0x00007ffd4aec0000 - 0x00007ffd4aec2a00 is .data in /cygdrive/c/windows/System32/combase.dll
+        0x00007ffd4aec6000 - 0x00007ffd4aef0bc4 is .pdata in /cygdrive/c/windows/System32/combase.dll
+        0x00007ffd4aef1000 - 0x00007ffd4aef1668 is .didat in /cygdrive/c/windows/System32/combase.dll
+        0x00007ffd4aef2000 - 0x00007ffd4af05d38 is .rsrc in /cygdrive/c/windows/System32/combase.dll
+        0x00007ffd4af06000 - 0x00007ffd4af13820 is .reloc in /cygdrive/c/windows/System32/combase.dll
+        0x00000003f9901000 - 0x00000003f9916b20 is .text in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f9917000 - 0x00000003f9917080 is .data in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f9918000 - 0x00000003f9919c90 is .rdata in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f991a000 - 0x00000003f991a035 is .buildid in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f991b000 - 0x00000003f991b810 is .pdata in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f991c000 - 0x00000003f991c760 is .xdata in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f991d000 - 0x00000003f991d1f0 is .bss in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f991e000 - 0x00000003f991eb2d is .edata in /usr/bin/cyggcc_s-seh-1.dll
+        0x00000003f991f000 - 0x00000003f991f470 is .idata in /usr/bin/cyggcc_s-seh-1.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003f9920000 - 0x00000003f9920018 is .reloc in /usr/bin/cyggcc_s-seh-1.dll
+        0x00007ffd46ce1000 - 0x00007ffd46cf9255 is .text in /cygdrive/c/windows/SYSTEM32/dwmapi.dll
+        0x00007ffd46cfa000 - 0x00007ffd46d01520 is .rdata in /cygdrive/c/windows/SYSTEM32/dwmapi.dll
+        0x00007ffd46d02000 - 0x00007ffd46d02400 is .data in /cygdrive/c/windows/SYSTEM32/dwmapi.dll
+        0x00007ffd46d06000 - 0x00007ffd46d0789c is .pdata in /cygdrive/c/windows/SYSTEM32/dwmapi.dll
+        0x00007ffd46d08000 - 0x00007ffd46d08038 is .didat in /cygdrive/c/windows/SYSTEM32/dwmapi.dll
+        0x00007ffd46d09000 - 0x00007ffd46d0d9a0 is .rsrc in /cygdrive/c/windows/SYSTEM32/dwmapi.dll
+        0x00007ffd46d0e000 - 0x00007ffd46d0e13c is .reloc in /cygdrive/c/windows/SYSTEM32/dwmapi.dll
+        0x00007ffd4b0d1000 - 0x00007ffd4b658af9 is .text in /cygdrive/c/windows/System32/SHELL32.dll
+        0x00007ffd4b659000 - 0x00007ffd4b7a1454 is .rdata in /cygdrive/c/windows/System32/SHELL32.dll
+        0x00007ffd4b7a2000 - 0x00007ffd4b7a4e00 is .data in /cygdrive/c/windows/System32/SHELL32.dll
+        0x00007ffd4b7ac000 - 0x00007ffd4b7f22e4 is .pdata in /cygdrive/c/windows/System32/SHELL32.dll
+        0x00007ffd4b7f3000 - 0x00007ffd4b7f5f10 is .didat in /cygdrive/c/windows/System32/SHELL32.dll
+        0x00007ffd4b7f6000 - 0x00007ffd4b7fe5a8 is .rsrc in /cygdrive/c/windows/System32/SHELL32.dll
+        0x00007ffd4b7ff000 - 0x00007ffd4b8120e4 is .reloc in /cygdrive/c/windows/System32/SHELL32.dll
+        0x000000041a5e1000 - 0x000000041a5e1f10 is .text in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e2000 - 0x000000041a5e2060 is .data in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e3000 - 0x000000041a5e33c8 is .rdata in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e4000 - 0x000000041a5e4035 is .buildid in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e5000 - 0x000000041a5e51a4 is .pdata in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e6000 - 0x000000041a5e60e0 is .xdata in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e7000 - 0x000000041a5e71d0 is .bss in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e8000 - 0x000000041a5e8371 is .edata in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5e9000 - 0x000000041a5e92e0 is .idata in /usr/bin/cygxcb-shm-0.dll
+        0x000000041a5ea000 - 0x000000041a5ea038 is .reloc in /usr/bin/cygxcb-shm-0.dll
+        0x00007ffd4a451000 - 0x00007ffd4a47d8ad is .text in /cygdrive/c/windows/System32/SHLWAPI.dll
+        0x00007ffd4a47e000 - 0x00007ffd4a49d292 is .rdata in /cygdrive/c/windows/System32/SHLWAPI.dll
+        0x00007ffd4a49e000 - 0x00007ffd4a49e400 is .data in /cygdrive/c/windows/System32/SHLWAPI.dll
+        0x00007ffd4a49f000 - 0x00007ffd4a4a14c0 is .pdata in /cygdrive/c/windows/System32/SHLWAPI.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd4a4a2000 - 0x00007ffd4a4a2968 is .didat in /cygdrive/c/windows/System32/SHLWAPI.dll
+        0x00007ffd4a4a3000 - 0x00007ffd4a4a3d98 is .rsrc in /cygdrive/c/windows/System32/SHLWAPI.dll
+        0x00007ffd4a4a4000 - 0x00007ffd4a4a472c is .reloc in /cygdrive/c/windows/System32/SHLWAPI.dll
+        0x00000003fabb1000 - 0x00000003fabb9330 is .text in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabba000 - 0x00000003fabba060 is .data in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabbb000 - 0x00000003fabbd058 is .rdata in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabbe000 - 0x00000003fabbe035 is .buildid in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabbf000 - 0x00000003fabbf30c is .pdata in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabc0000 - 0x00000003fabc0328 is .xdata in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabc1000 - 0x00000003fabc11d0 is .bss in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabc2000 - 0x00000003fabc2470 is .edata in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabc3000 - 0x00000003fabc34b0 is .idata in /usr/bin/cygbrotlidec-1.dll
+        0x00000003fabc4000 - 0x00000003fabc4030 is .reloc in /usr/bin/cygbrotlidec-1.dll
+        0x00000003f7211000 - 0x00000003f7235d10 is .text in /usr/bin/cygpng16-16.dll
+        0x00000003f7236000 - 0x00000003f7236060 is .data in /usr/bin/cygpng16-16.dll
+        0x00000003f7237000 - 0x00000003f723bd00 is .rdata in /usr/bin/cygpng16-16.dll
+        0x00000003f723c000 - 0x00000003f723c035 is .buildid in /usr/bin/cygpng16-16.dll
+        0x00000003f723d000 - 0x00000003f723e6e0 is .pdata in /usr/bin/cygpng16-16.dll
+        0x00000003f723f000 - 0x00000003f72404e0 is .xdata in /usr/bin/cygpng16-16.dll
+        0x00000003f7241000 - 0x00000003f72411d0 is .bss in /usr/bin/cygpng16-16.dll
+        0x00000003f7242000 - 0x00000003f7243df2 is .edata in /usr/bin/cygpng16-16.dll
+        0x00000003f7244000 - 0x00000003f72446dc is .idata in /usr/bin/cygpng16-16.dll
+        0x00000003f7245000 - 0x00000003f724505c is .reloc in /usr/bin/cygpng16-16.dll
+        0x00000003f8201000 - 0x00000003f821fc88 is .text in /usr/bin/cygk5crypto-3.dll
+        0x00000003f8220000 - 0x00000003f82200a8 is .data in /usr/bin/cygk5crypto-3.dll
+        0x00000003f8221000 - 0x00000003f822cab8 is .rdata in /usr/bin/cygk5crypto-3.dll
+        0x00000003f822d000 - 0x00000003f822d035 is .buildid in /usr/bin/cygk5crypto-3.dll
+        0x00000003f822e000 - 0x00000003f822e010 is .rodata in /usr/bin/cygk5crypto-3.dll
+        0x00000003f822f000 - 0x00000003f822fcb4 is .pdata in /usr/bin/cygk5crypto-3.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003f8230000 - 0x00000003f8230ed8 is .xdata in /usr/bin/cygk5crypto-3.dll
+        0x00000003f8231000 - 0x00000003f8232038 is .bss in /usr/bin/cygk5crypto-3.dll
+        0x00000003f8233000 - 0x00000003f8234dc1 is .edata in /usr/bin/cygk5crypto-3.dll
+        0x00000003f8235000 - 0x00000003f82356d0 is .idata in /usr/bin/cygk5crypto-3.dll
+        0x00000003f8236000 - 0x00000003f8236294 is .reloc in /usr/bin/cygk5crypto-3.dll
+        0x00000003f8131000 - 0x00000003f818b628 is .text in /usr/bin/cygkrb5-3.dll
+        0x00000003f818c000 - 0x00000003f818d408 is .data in /usr/bin/cygkrb5-3.dll
+        0x00000003f818e000 - 0x00000003f81d08c8 is .rdata in /usr/bin/cygkrb5-3.dll
+        0x00000003f81d1000 - 0x00000003f81d1035 is .buildid in /usr/bin/cygkrb5-3.dll
+        0x00000003f81d2000 - 0x00000003f81d6d7c is .pdata in /usr/bin/cygkrb5-3.dll
+        0x00000003f81d7000 - 0x00000003f81db9c4 is .xdata in /usr/bin/cygkrb5-3.dll
+        0x00000003f81dc000 - 0x00000003f81dc270 is .bss in /usr/bin/cygkrb5-3.dll
+        0x00000003f81dd000 - 0x00000003f81ecc16 is .edata in /usr/bin/cygkrb5-3.dll
+        0x00000003f81ed000 - 0x00000003f81ef580 is .idata in /usr/bin/cygkrb5-3.dll
+        0x00000003f81f0000 - 0x00000003f81f1a90 is .reloc in /usr/bin/cygkrb5-3.dll
+        0x00000003f8111000 - 0x00000003f81162d8 is .text in /usr/bin/cygkrb5support-0.dll
+        0x00000003f8117000 - 0x00000003f8117188 is .data in /usr/bin/cygkrb5support-0.dll
+        0x00000003f8118000 - 0x00000003f8118d38 is .rdata in /usr/bin/cygkrb5support-0.dll
+        0x00000003f8119000 - 0x00000003f8119035 is .buildid in /usr/bin/cygkrb5support-0.dll
+        0x00000003f811a000 - 0x00000003f811a708 is .pdata in /usr/bin/cygkrb5support-0.dll
+        0x00000003f811b000 - 0x00000003f811b5c4 is .xdata in /usr/bin/cygkrb5support-0.dll
+        0x00000003f811c000 - 0x00000003f811c210 is .bss in /usr/bin/cygkrb5support-0.dll
+        0x00000003f811d000 - 0x00000003f811de4c is .edata in /usr/bin/cygkrb5support-0.dll
+        0x00000003f811e000 - 0x00000003f811e7f8 is .idata in /usr/bin/cygkrb5support-0.dll
+        0x00000003f811f000 - 0x00000003f811f03c is .reloc in /usr/bin/cygkrb5support-0.dll
+        0x00000003fa9c1000 - 0x00000003fa9c2168 is .text in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9c3000 - 0x00000003fa9c30a0 is .data in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9c4000 - 0x00000003fa9c4498 is .rdata in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9c5000 - 0x00000003fa9c5035 is .buildid in /usr/bin/cygcom_err-2.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003fa9c6000 - 0x00000003fa9c618c is .pdata in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9c7000 - 0x00000003fa9c70ec is .xdata in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9c8000 - 0x00000003fa9c81f0 is .bss in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9c9000 - 0x00000003fa9c9275 is .edata in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9ca000 - 0x00000003fa9ca5ac is .idata in /usr/bin/cygcom_err-2.dll
+        0x00000003fa9cb000 - 0x00000003fa9cb024 is .reloc in /usr/bin/cygcom_err-2.dll
+        0x00000003f85a1000 - 0x00000003f85b5198 is .text in /usr/bin/cygintl-8.dll
+        0x00000003f85b6000 - 0x00000003f85b60e0 is .data in /usr/bin/cygintl-8.dll
+        0x00000003f85b7000 - 0x00000003f85b9438 is .rdata in /usr/bin/cygintl-8.dll
+        0x00000003f85ba000 - 0x00000003f85ba035 is .buildid in /usr/bin/cygintl-8.dll
+        0x00000003f85bb000 - 0x00000003f85bb648 is .pdata in /usr/bin/cygintl-8.dll
+        0x00000003f85bc000 - 0x00000003f85bc838 is .xdata in /usr/bin/cygintl-8.dll
+        0x00000003f85bd000 - 0x00000003f85bdad0 is .bss in /usr/bin/cygintl-8.dll
+        0x00000003f85be000 - 0x00000003f85bea56 is .edata in /usr/bin/cygintl-8.dll
+        0x00000003f85bf000 - 0x00000003f85bfc18 is .idata in /usr/bin/cygintl-8.dll
+        0x00000003f85c0000 - 0x00000003f85c05f0 is .rsrc in /usr/bin/cygintl-8.dll
+        0x00000003f85c1000 - 0x00000003f85c1040 is .reloc in /usr/bin/cygintl-8.dll
+        0x00007ffd212e1000 - 0x00007ffd213c0580 is .text in /cygdrive/c/windows/SYSTEM32/OPENGL32.dll
+        0x00007ffd213c1000 - 0x00007ffd213d9ce8 is .rdata in /cygdrive/c/windows/SYSTEM32/OPENGL32.dll
+        0x00007ffd213da000 - 0x00007ffd213dd800 is .data in /cygdrive/c/windows/SYSTEM32/OPENGL32.dll
+        0x00007ffd213fb000 - 0x00007ffd21402128 is .pdata in /cygdrive/c/windows/SYSTEM32/OPENGL32.dll
+        0x00007ffd21403000 - 0x00007ffd21403050 is .didat in /cygdrive/c/windows/SYSTEM32/OPENGL32.dll
+        0x00007ffd21404000 - 0x00007ffd214043e8 is .rsrc in /cygdrive/c/windows/SYSTEM32/OPENGL32.dll
+        0x00007ffd21405000 - 0x00007ffd2140621c is .reloc in /cygdrive/c/windows/SYSTEM32/OPENGL32.dll
+        0x00000003fabd1000 - 0x00000003fabd1c50 is .text in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabd2000 - 0x00000003fabd2060 is .data in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabd3000 - 0x00000003fabf1ea8 is .rdata in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabf2000 - 0x00000003fabf2035 is .buildid in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabf3000 - 0x00000003fabf3114 is .pdata in /usr/bin/cygbrotlicommon-1.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00000003fabf4000 - 0x00000003fabf4098 is .xdata in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabf5000 - 0x00000003fabf51d0 is .bss in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabf6000 - 0x00000003fabf6213 is .edata in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabf7000 - 0x00000003fabf7204 is .idata in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003fabf8000 - 0x00000003fabf802c is .reloc in /usr/bin/cygbrotlicommon-1.dll
+        0x00000003f8651000 - 0x00000003f866bbe8 is .text in /usr/bin/cygiconv-2.dll
+        0x00000003f866c000 - 0x00000003f866c080 is .data in /usr/bin/cygiconv-2.dll
+        0x00000003f866d000 - 0x00000003f8757978 is .rdata in /usr/bin/cygiconv-2.dll
+        0x00000003f8758000 - 0x00000003f8758035 is .buildid in /usr/bin/cygiconv-2.dll
+        0x00000003f8759000 - 0x00000003f875a830 is .pdata in /usr/bin/cygiconv-2.dll
+        0x00000003f875b000 - 0x00000003f875bfe8 is .xdata in /usr/bin/cygiconv-2.dll
+        0x00000003f875c000 - 0x00000003f875c230 is .bss in /usr/bin/cygiconv-2.dll
+        0x00000003f875d000 - 0x00000003f875d1db is .edata in /usr/bin/cygiconv-2.dll
+        0x00000003f875e000 - 0x00000003f875e370 is .idata in /usr/bin/cygiconv-2.dll
+        0x00000003f875f000 - 0x00000003f875f5e8 is .rsrc in /usr/bin/cygiconv-2.dll
+        0x00000003f8760000 - 0x00000003f8760388 is .reloc in /usr/bin/cygiconv-2.dll
+        0x00007ffd442a1000 - 0x00007ffd442beee0 is .text in /cygdrive/c/windows/SYSTEM32/GLU32.dll
+        0x00007ffd442bf000 - 0x00007ffd442c2b6c is .rdata in /cygdrive/c/windows/SYSTEM32/GLU32.dll
+        0x00007ffd442c3000 - 0x00007ffd442c7a00 is .data in /cygdrive/c/windows/SYSTEM32/GLU32.dll
+        0x00007ffd442c9000 - 0x00007ffd442c9f30 is .pdata in /cygdrive/c/windows/SYSTEM32/GLU32.dll
+        0x00007ffd442ca000 - 0x00007ffd442ca508 is .rsrc in /cygdrive/c/windows/SYSTEM32/GLU32.dll
+        0x00007ffd442cb000 - 0x00007ffd442cb0c0 is .reloc in /cygdrive/c/windows/SYSTEM32/GLU32.dll
+        0x00007ffd48891000 - 0x00007ffd488938a3 is .text in /cygdrive/c/windows/SYSTEM32/CRYPTBASE.DLL
+        0x00007ffd48894000 - 0x00007ffd48896314 is .rdata in /cygdrive/c/windows/SYSTEM32/CRYPTBASE.DLL
+        0x00007ffd48897000 - 0x00007ffd48897200 is .data in /cygdrive/c/windows/SYSTEM32/CRYPTBASE.DLL
+        0x00007ffd48898000 - 0x00007ffd48898288 is .pdata in /cygdrive/c/windows/SYSTEM32/CRYPTBASE.DLL
+        0x00007ffd48899000 - 0x00007ffd48899060 is .didat in /cygdrive/c/windows/SYSTEM32/CRYPTBASE.DLL
+        0x00007ffd4889a000 - 0x00007ffd4889a410 is .rsrc in /cygdrive/c/windows/SYSTEM32/CRYPTBASE.DLL
+        0x00007ffd4889b000 - 0x00007ffd4889b038 is .reloc in /cygdrive/c/windows/SYSTEM32/CRYPTBASE.DLL
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd49121000 - 0x00007ffd49184b4a is .text in /cygdrive/c/windows/System32/bcryptPrimitives.dll
+        0x00007ffd49185000 - 0x00007ffd4919a5c0 is .rdata in /cygdrive/c/windows/System32/bcryptPrimitives.dll
+        0x00007ffd4919b000 - 0x00007ffd4919b200 is .data in /cygdrive/c/windows/System32/bcryptPrimitives.dll
+        0x00007ffd4919c000 - 0x00007ffd4919f054 is .pdata in /cygdrive/c/windows/System32/bcryptPrimitives.dll
+        0x00007ffd491a0000 - 0x00007ffd491a0448 is .rsrc in /cygdrive/c/windows/System32/bcryptPrimitives.dll
+        0x00007ffd491a1000 - 0x00007ffd491a1498 is .reloc in /cygdrive/c/windows/System32/bcryptPrimitives.dll
+        0x00007ffd4a521000 - 0x00007ffd4a53ed42 is .text in /cygdrive/c/windows/System32/IMM32.DLL
+        0x00007ffd4a53f000 - 0x00007ffd4a545070 is .rdata in /cygdrive/c/windows/System32/IMM32.DLL
+        0x00007ffd4a546000 - 0x00007ffd4a546200 is .data in /cygdrive/c/windows/System32/IMM32.DLL
+        0x00007ffd4a547000 - 0x00007ffd4a548254 is .pdata in /cygdrive/c/windows/System32/IMM32.DLL
+        0x00007ffd4a549000 - 0x00007ffd4a5491f8 is .didat in /cygdrive/c/windows/System32/IMM32.DLL
+        0x00007ffd4a54a000 - 0x00007ffd4a54ec40 is .rsrc in /cygdrive/c/windows/System32/IMM32.DLL
+        0x00007ffd4a54f000 - 0x00007ffd4a54f0d8 is .reloc in /cygdrive/c/windows/System32/IMM32.DLL
+        0x00007ffd48371000 - 0x00007ffd483998fb is .text in /cygdrive/c/windows/system32/iphlpapi.dll
+        0x00007ffd4839a000 - 0x00007ffd483a416c is .rdata in /cygdrive/c/windows/system32/iphlpapi.dll
+        0x00007ffd483a5000 - 0x00007ffd483a5600 is .data in /cygdrive/c/windows/system32/iphlpapi.dll
+        0x00007ffd483a6000 - 0x00007ffd483a79bc is .pdata in /cygdrive/c/windows/system32/iphlpapi.dll
+        0x00007ffd483a8000 - 0x00007ffd483a8190 is .didat in /cygdrive/c/windows/system32/iphlpapi.dll
+        0x00007ffd483a9000 - 0x00007ffd483a9508 is .rsrc in /cygdrive/c/windows/system32/iphlpapi.dll
+        0x00007ffd483aa000 - 0x00007ffd483aa164 is .reloc in /cygdrive/c/windows/system32/iphlpapi.dll
+        0x00007ffd483b1000 - 0x00007ffd48434665 is .text in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd48435000 - 0x00007ffd48442c1b is .wpp_sf in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd48443000 - 0x00007ffd48464684 is .rdata in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd48465000 - 0x00007ffd48465400 is .data in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd48467000 - 0x00007ffd4846e488 is .pdata in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd4846f000 - 0x00007ffd4846f2d8 is .didat in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd48470000 - 0x00007ffd48478548 is .rsrc in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd48479000 - 0x00007ffd48479e24 is .reloc in /cygdrive/c/windows/SYSTEM32/DNSAPI.dll
+        0x00007ffd49991000 - 0x00007ffd49992d66 is .text in /cygdrive/c/windows/System32/NSI.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd49993000 - 0x00007ffd49993fac is .rdata in /cygdrive/c/windows/System32/NSI.dll
+        0x00007ffd49994000 - 0x00007ffd49994200 is .data in /cygdrive/c/windows/System32/NSI.dll
+        0x00007ffd49995000 - 0x00007ffd49995258 is .pdata in /cygdrive/c/windows/System32/NSI.dll
+        0x00007ffd49996000 - 0x00007ffd499963f8 is .rsrc in /cygdrive/c/windows/System32/NSI.dll
+        0x00007ffd49997000 - 0x00007ffd49997018 is .reloc in /cygdrive/c/windows/System32/NSI.dll
+        0x00007ffd43711000 - 0x00007ffd43716add is .text in /cygdrive/c/windows/SYSTEM32/dhcpcsvc6.DLL
+        0x00007ffd43717000 - 0x00007ffd4371adfe is .rdata in /cygdrive/c/windows/SYSTEM32/dhcpcsvc6.DLL
+        0x00007ffd4371b000 - 0x00007ffd4371b200 is .data in /cygdrive/c/windows/SYSTEM32/dhcpcsvc6.DLL
+        0x00007ffd4371c000 - 0x00007ffd4371c600 is .pdata in /cygdrive/c/windows/SYSTEM32/dhcpcsvc6.DLL
+        0x00007ffd4371d000 - 0x00007ffd4371d050 is .didat in /cygdrive/c/windows/SYSTEM32/dhcpcsvc6.DLL
+        0x00007ffd4371e000 - 0x00007ffd437252a8 is .rsrc in /cygdrive/c/windows/SYSTEM32/dhcpcsvc6.DLL
+        0x00007ffd43726000 - 0x00007ffd4372619c is .reloc in /cygdrive/c/windows/SYSTEM32/dhcpcsvc6.DLL
+        0x00007ffd43e11000 - 0x00007ffd43e1fe98 is .text in /cygdrive/c/windows/SYSTEM32/dhcpcsvc.DLL
+        0x00007ffd43e20000 - 0x00007ffd43e27c2e is .rdata in /cygdrive/c/windows/SYSTEM32/dhcpcsvc.DLL
+        0x00007ffd43e28000 - 0x00007ffd43e28200 is .data in /cygdrive/c/windows/SYSTEM32/dhcpcsvc.DLL
+        0x00007ffd43e29000 - 0x00007ffd43e29bac is .pdata in /cygdrive/c/windows/SYSTEM32/dhcpcsvc.DLL
+        0x00007ffd43e2a000 - 0x00007ffd43e2a080 is .didat in /cygdrive/c/windows/SYSTEM32/dhcpcsvc.DLL
+        0x00007ffd43e2b000 - 0x00007ffd43e2b518 is .rsrc in /cygdrive/c/windows/SYSTEM32/dhcpcsvc.DLL
+        0x00007ffd43e2c000 - 0x00007ffd43e2c3e0 is .reloc in /cygdrive/c/windows/SYSTEM32/dhcpcsvc.DLL
+        0x00007ffd44171000 - 0x00007ffd44173d3c is .text in /cygdrive/c/windows/SYSTEM32/WINNSI.DLL
+        0x00007ffd44174000 - 0x00007ffd441767ca is .rdata in /cygdrive/c/windows/SYSTEM32/WINNSI.DLL
+        0x00007ffd44177000 - 0x00007ffd44177200 is .data in /cygdrive/c/windows/SYSTEM32/WINNSI.DLL
+        0x00007ffd44178000 - 0x00007ffd441782f4 is .pdata in /cygdrive/c/windows/SYSTEM32/WINNSI.DLL
+        0x00007ffd44179000 - 0x00007ffd44179420 is .rsrc in /cygdrive/c/windows/SYSTEM32/WINNSI.DLL
+        0x00007ffd4417a000 - 0x00007ffd4417a0e8 is .reloc in /cygdrive/c/windows/SYSTEM32/WINNSI.DLL
+        0x00007ffd469e1000 - 0x00007ffd46a3eae4 is .text in /cygdrive/c/windows/system32/uxtheme.dll
+        0x00007ffd46a3f000 - 0x00007ffd46a70fbc is .rdata in /cygdrive/c/windows/system32/uxtheme.dll
+        0x00007ffd46a71000 - 0x00007ffd46a72400 is .data in /cygdrive/c/windows/system32/uxtheme.dll
+        0x00007ffd46a74000 - 0x00007ffd46a79ed4 is .pdata in /cygdrive/c/windows/system32/uxtheme.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd46a7a000 - 0x00007ffd46a7a0f8 is .didat in /cygdrive/c/windows/system32/uxtheme.dll
+        0x00007ffd46a7b000 - 0x00007ffd46a7bf08 is .rsrc in /cygdrive/c/windows/system32/uxtheme.dll
+        0x00007ffd46a7c000 - 0x00007ffd46a7d1c0 is .reloc in /cygdrive/c/windows/system32/uxtheme.dll
+        0x00007ffd4a4b1000 - 0x00007ffd4a4f1304 is .text in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd4a4f2000 - 0x00007ffd4a4f4f32 is .wpp_sf in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd4a4f5000 - 0x00007ffd4a501f12 is .rdata in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd4a502000 - 0x00007ffd4a502200 is .data in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd4a503000 - 0x00007ffd4a5060cc is .pdata in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd4a507000 - 0x00007ffd4a507090 is .didat in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd4a508000 - 0x00007ffd4a519300 is .rsrc in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd4a51a000 - 0x00007ffd4a51a150 is .reloc in /cygdrive/c/windows/System32/ws2_32.dll
+        0x00007ffd48681000 - 0x00007ffd486b7462 is .text in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486b8000 - 0x00007ffd486cf71c is SANONTCP in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486d0000 - 0x00007ffd486d308b is .wpp_sf in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486d4000 - 0x00007ffd486e1f24 is .rdata in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486e2000 - 0x00007ffd486e2c00 is .data in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486e4000 - 0x00007ffd486e6688 is .pdata in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486e7000 - 0x00007ffd486e7080 is .didat in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486e8000 - 0x00007ffd486e8550 is .rsrc in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd486e9000 - 0x00007ffd486e9100 is .reloc in /cygdrive/c/windows/system32/mswsock.dll
+        0x00007ffd4a201000 - 0x00007ffd4a2754a0 is .text in /cygdrive/c/windows/System32/shcore.dll
+        0x00007ffd4a276000 - 0x00007ffd4a29b512 is .rdata in /cygdrive/c/windows/System32/shcore.dll
+        0x00007ffd4a29c000 - 0x00007ffd4a29c600 is .data in /cygdrive/c/windows/System32/shcore.dll
+        0x00007ffd4a29e000 - 0x00007ffd4a2a6d84 is .pdata in /cygdrive/c/windows/System32/shcore.dll
+        0x00007ffd4a2a7000 - 0x00007ffd4a2a7408 is .didat in /cygdrive/c/windows/System32/shcore.dll
+        0x00007ffd4a2a8000 - 0x00007ffd4a2a84f0 is .rsrc in /cygdrive/c/windows/System32/shcore.dll
+        0x00007ffd4a2a9000 - 0x00007ffd4a2ac36c is .reloc in /cygdrive/c/windows/System32/shcore.dll
+        0x00007ffd32b71000 - 0x00007ffd32bf04f6 is .text in /cygdrive/c/windows/SYSTEM32/ddraw.dll
+        0x00007ffd32bf1000 - 0x00007ffd32bfc94a is .rdata in /cygdrive/c/windows/SYSTEM32/ddraw.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd32bfd000 - 0x00007ffd32bfea00 is .data in /cygdrive/c/windows/SYSTEM32/ddraw.dll
+        0x00007ffd32c64000 - 0x00007ffd32c67198 is .pdata in /cygdrive/c/windows/SYSTEM32/ddraw.dll
+        0x00007ffd32c68000 - 0x00007ffd32c68060 is .didat in /cygdrive/c/windows/SYSTEM32/ddraw.dll
+        0x00007ffd32c69000 - 0x00007ffd32c69508 is .rsrc in /cygdrive/c/windows/SYSTEM32/ddraw.dll
+        0x00007ffd32c6a000 - 0x00007ffd32c6a200 is .reloc in /cygdrive/c/windows/SYSTEM32/ddraw.dll
+        0x00007ffd48d31000 - 0x00007ffd48d34fc8 is .text in /cygdrive/c/windows/SYSTEM32/kernel.appcore.dll
+        0x00007ffd48d35000 - 0x00007ffd48d3c1c4 is .rdata in /cygdrive/c/windows/SYSTEM32/kernel.appcore.dll
+        0x00007ffd48d3d000 - 0x00007ffd48d3d200 is .data in /cygdrive/c/windows/SYSTEM32/kernel.appcore.dll
+        0x00007ffd48d3e000 - 0x00007ffd48d3e4ec is .pdata in /cygdrive/c/windows/SYSTEM32/kernel.appcore.dll
+        0x00007ffd48d3f000 - 0x00007ffd48d3f018 is .didat in /cygdrive/c/windows/SYSTEM32/kernel.appcore.dll
+        0x00007ffd48d40000 - 0x00007ffd48d40410 is .rsrc in /cygdrive/c/windows/SYSTEM32/kernel.appcore.dll
+        0x00007ffd48d41000 - 0x00007ffd48d4108c is .reloc in /cygdrive/c/windows/SYSTEM32/kernel.appcore.dll
+        0x00007ffd479a1000 - 0x00007ffd47a377b3 is .text in /cygdrive/c/windows/SYSTEM32/dxgi.dll
+        0x00007ffd47a38000 - 0x00007ffd47a6a5ac is .rdata in /cygdrive/c/windows/SYSTEM32/dxgi.dll
+        0x00007ffd47a6b000 - 0x00007ffd47a6b600 is .data in /cygdrive/c/windows/SYSTEM32/dxgi.dll
+        0x00007ffd47a70000 - 0x00007ffd47a77b9c is .pdata in /cygdrive/c/windows/SYSTEM32/dxgi.dll
+        0x00007ffd47a78000 - 0x00007ffd47a78538 is .didat in /cygdrive/c/windows/SYSTEM32/dxgi.dll
+        0x00007ffd47a79000 - 0x00007ffd47a90f80 is .rsrc in /cygdrive/c/windows/SYSTEM32/dxgi.dll
+        0x00007ffd47a91000 - 0x00007ffd47a92200 is .reloc in /cygdrive/c/windows/SYSTEM32/dxgi.dll
+        0x00007ffd46631000 - 0x00007ffd466329f0 is .text in /cygdrive/c/windows/SYSTEM32/DCIMAN32.dll
+        0x00007ffd46633000 - 0x00007ffd46634022 is .rdata in /cygdrive/c/windows/SYSTEM32/DCIMAN32.dll
+        0x00007ffd46635000 - 0x00007ffd46635200 is .data in /cygdrive/c/windows/SYSTEM32/DCIMAN32.dll
+        0x00007ffd46636000 - 0x00007ffd466361b0 is .pdata in /cygdrive/c/windows/SYSTEM32/DCIMAN32.dll
+        0x00007ffd46637000 - 0x00007ffd466373e0 is .rsrc in /cygdrive/c/windows/SYSTEM32/DCIMAN32.dll
+        0x00007ffd46638000 - 0x00007ffd4663801c is .reloc in /cygdrive/c/windows/SYSTEM32/DCIMAN32.dll
+        0x00007ffd42251000 - 0x00007ffd422539fc is .text in /cygdrive/c/windows/SYSTEM32/VERSION.dll
+        0x00007ffd42254000 - 0x00007ffd42255be4 is .rdata in /cygdrive/c/windows/SYSTEM32/VERSION.dll
+        0x00007ffd42256000 - 0x00007ffd42256200 is .data in /cygdrive/c/windows/SYSTEM32/VERSION.dll
+        0x00007ffd42257000 - 0x00007ffd422572c4 is .pdata in /cygdrive/c/windows/SYSTEM32/VERSION.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd42258000 - 0x00007ffd42258428 is .rsrc in /cygdrive/c/windows/SYSTEM32/VERSION.dll
+        0x00007ffd42259000 - 0x00007ffd4225901c is .reloc in /cygdrive/c/windows/SYSTEM32/VERSION.dll
+        0x00007ffd48ab1000 - 0x00007ffd48ab97a6 is .text in /cygdrive/c/windows/SYSTEM32/msasn1.dll
+        0x00007ffd48aba000 - 0x00007ffd48abd27a is .rdata in /cygdrive/c/windows/SYSTEM32/msasn1.dll
+        0x00007ffd48abe000 - 0x00007ffd48abe200 is .data in /cygdrive/c/windows/SYSTEM32/msasn1.dll
+        0x00007ffd48abf000 - 0x00007ffd48abfc9c is .pdata in /cygdrive/c/windows/SYSTEM32/msasn1.dll
+        0x00007ffd48ac0000 - 0x00007ffd48ac03f8 is .rsrc in /cygdrive/c/windows/SYSTEM32/msasn1.dll
+        0x00007ffd48ac1000 - 0x00007ffd48ac1018 is .reloc in /cygdrive/c/windows/SYSTEM32/msasn1.dll
+        0x00007ffd41d21000 - 0x00007ffd41d41e71 is .text in /cygdrive/c/windows/SYSTEM32/cryptnet.dll
+        0x00007ffd41d42000 - 0x00007ffd41d4a7e6 is .rdata in /cygdrive/c/windows/SYSTEM32/cryptnet.dll
+        0x00007ffd41d4b000 - 0x00007ffd41d4b200 is .data in /cygdrive/c/windows/SYSTEM32/cryptnet.dll
+        0x00007ffd41d4c000 - 0x00007ffd41d4dadc is .pdata in /cygdrive/c/windows/SYSTEM32/cryptnet.dll
+        0x00007ffd41d4e000 - 0x00007ffd41d4e170 is .didat in /cygdrive/c/windows/SYSTEM32/cryptnet.dll
+        0x00007ffd41d4f000 - 0x00007ffd41d4f438 is .rsrc in /cygdrive/c/windows/SYSTEM32/cryptnet.dll
+        0x00007ffd41d50000 - 0x00007ffd41d50124 is .reloc in /cygdrive/c/windows/SYSTEM32/cryptnet.dll
+        0x00007ffd49371000 - 0x00007ffd49476747 is .text in /cygdrive/c/windows/System32/CRYPT32.dll
+        0x00007ffd49477000 - 0x00007ffd494add16 is .rdata in /cygdrive/c/windows/System32/CRYPT32.dll
+        0x00007ffd494ae000 - 0x00007ffd494aea00 is .data in /cygdrive/c/windows/System32/CRYPT32.dll
+        0x00007ffd494b5000 - 0x00007ffd494c178c is .pdata in /cygdrive/c/windows/System32/CRYPT32.dll
+        0x00007ffd494c2000 - 0x00007ffd494c2750 is .didat in /cygdrive/c/windows/System32/CRYPT32.dll
+        0x00007ffd494c3000 - 0x00007ffd494c3560 is .rsrc in /cygdrive/c/windows/System32/CRYPT32.dll
+        0x00007ffd494c4000 - 0x00007ffd494c5f58 is .reloc in /cygdrive/c/windows/System32/CRYPT32.dll
+        0x00007ffd48921000 - 0x00007ffd4893aaba is .text in /cygdrive/c/windows/SYSTEM32/wldp.dll
+        0x00007ffd4893b000 - 0x00007ffd48948f10 is .rdata in /cygdrive/c/windows/SYSTEM32/wldp.dll
+        0x00007ffd48949000 - 0x00007ffd48949400 is .data in /cygdrive/c/windows/SYSTEM32/wldp.dll
+        0x00007ffd4894a000 - 0x00007ffd4894b8cc is .pdata in /cygdrive/c/windows/SYSTEM32/wldp.dll
+        0x00007ffd4894c000 - 0x00007ffd4894c190 is .didat in /cygdrive/c/windows/SYSTEM32/wldp.dll
+        0x00007ffd4894d000 - 0x00007ffd4894eed8 is .rsrc in /cygdrive/c/windows/SYSTEM32/wldp.dll
+        0x00007ffd4894f000 - 0x00007ffd4894f4a8 is .reloc in /cygdrive/c/windows/SYSTEM32/wldp.dll
+
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd42651000 - 0x00007ffd42740428 is .text in /cygdrive/c/windows/SYSTEM32/drvstore.dll
+        0x00007ffd42741000 - 0x00007ffd42788ea4 is .rdata in /cygdrive/c/windows/SYSTEM32/drvstore.dll
+        0x00007ffd42789000 - 0x00007ffd42789e00 is .data in /cygdrive/c/windows/SYSTEM32/drvstore.dll
+        0x00007ffd4278c000 - 0x00007ffd42793554 is .pdata in /cygdrive/c/windows/SYSTEM32/drvstore.dll
+        0x00007ffd42794000 - 0x00007ffd42794338 is .didat in /cygdrive/c/windows/SYSTEM32/drvstore.dll
+        0x00007ffd42795000 - 0x00007ffd427953f8 is .rsrc in /cygdrive/c/windows/SYSTEM32/drvstore.dll
+        0x00007ffd42796000 - 0x00007ffd427979f8 is .reloc in /cygdrive/c/windows/SYSTEM32/drvstore.dll
+        0x00007ffd48cd1000 - 0x00007ffd48ceb9bd is .text in /cygdrive/c/windows/SYSTEM32/devobj.dll
+        0x00007ffd48cec000 - 0x00007ffd48cf53ee is .rdata in /cygdrive/c/windows/SYSTEM32/devobj.dll
+        0x00007ffd48cf6000 - 0x00007ffd48cf6200 is .data in /cygdrive/c/windows/SYSTEM32/devobj.dll
+        0x00007ffd48cf7000 - 0x00007ffd48cf80a4 is .pdata in /cygdrive/c/windows/SYSTEM32/devobj.dll
+        0x00007ffd48cf9000 - 0x00007ffd48cf9028 is .didat in /cygdrive/c/windows/SYSTEM32/devobj.dll
+        0x00007ffd48cfa000 - 0x00007ffd48cfa418 is .rsrc in /cygdrive/c/windows/SYSTEM32/devobj.dll
+        0x00007ffd48cfb000 - 0x00007ffd48cfb148 is .reloc in /cygdrive/c/windows/SYSTEM32/devobj.dll
+        0x00007ffd498e1000 - 0x00007ffd4991640d is .text in /cygdrive/c/windows/System32/cfgmgr32.dll
+        0x00007ffd49917000 - 0x00007ffd4992536a is .rdata in /cygdrive/c/windows/System32/cfgmgr32.dll
+        0x00007ffd49926000 - 0x00007ffd49926200 is .data in /cygdrive/c/windows/System32/cfgmgr32.dll
+        0x00007ffd49928000 - 0x00007ffd4992aed4 is .pdata in /cygdrive/c/windows/System32/cfgmgr32.dll
+        0x00007ffd4992b000 - 0x00007ffd4992b0b8 is .didat in /cygdrive/c/windows/System32/cfgmgr32.dll
+        0x00007ffd4992c000 - 0x00007ffd4992c408 is .rsrc in /cygdrive/c/windows/System32/cfgmgr32.dll
+        0x00007ffd4992d000 - 0x00007ffd4992d2ac is .reloc in /cygdrive/c/windows/System32/cfgmgr32.dll
+        0x00007ffd49501000 - 0x00007ffd4954af33 is .text in /cygdrive/c/windows/System32/wintrust.dll
+        0x00007ffd4954b000 - 0x00007ffd4955e876 is .rdata in /cygdrive/c/windows/System32/wintrust.dll
+        0x00007ffd4955f000 - 0x00007ffd4955f400 is .data in /cygdrive/c/windows/System32/wintrust.dll
+        0x00007ffd49561000 - 0x00007ffd49564c3c is .pdata in /cygdrive/c/windows/System32/wintrust.dll
+        0x00007ffd49565000 - 0x00007ffd495655e8 is .didat in /cygdrive/c/windows/System32/wintrust.dll
+        0x00007ffd49566000 - 0x00007ffd49567e70 is .rsrc in /cygdrive/c/windows/System32/wintrust.dll
+        0x00007ffd49568000 - 0x00007ffd49568510 is .reloc in /cygdrive/c/windows/System32/wintrust.dll
+        0x00007ffd49ea1000 - 0x00007ffd49eabeac is .text in /cygdrive/c/windows/System32/imagehlp.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd49eac000 - 0x00007ffd49eb32e8 is .rdata in /cygdrive/c/windows/System32/imagehlp.dll
+        0x00007ffd49eb4000 - 0x00007ffd49eb4800 is .data in /cygdrive/c/windows/System32/imagehlp.dll
+        0x00007ffd49eb6000 - 0x00007ffd49eb66fc is .pdata in /cygdrive/c/windows/System32/imagehlp.dll
+        0x00007ffd49eb7000 - 0x00007ffd49eb7318 is .didat in /cygdrive/c/windows/System32/imagehlp.dll
+        0x00007ffd49eb8000 - 0x00007ffd49ebacc0 is .mrdata in /cygdrive/c/windows/System32/imagehlp.dll
+        0x00007ffd49ebb000 - 0x00007ffd49ebbb68 is .rsrc in /cygdrive/c/windows/System32/imagehlp.dll
+        0x00007ffd49ebc000 - 0x00007ffd49ebc6dc is .reloc in /cygdrive/c/windows/System32/imagehlp.dll
+        0x00007ffd48871000 - 0x00007ffd4887c2c1 is .text in /cygdrive/c/windows/SYSTEM32/CRYPTSP.dll
+        0x00007ffd4887d000 - 0x00007ffd48882234 is .rdata in /cygdrive/c/windows/SYSTEM32/CRYPTSP.dll
+        0x00007ffd48883000 - 0x00007ffd48883200 is .data in /cygdrive/c/windows/SYSTEM32/CRYPTSP.dll
+        0x00007ffd48884000 - 0x00007ffd48884984 is .pdata in /cygdrive/c/windows/SYSTEM32/CRYPTSP.dll
+        0x00007ffd48885000 - 0x00007ffd48885088 is .didat in /cygdrive/c/windows/SYSTEM32/CRYPTSP.dll
+        0x00007ffd48886000 - 0x00007ffd488864b8 is .rsrc in /cygdrive/c/windows/SYSTEM32/CRYPTSP.dll
+        0x00007ffd48887000 - 0x00007ffd4888713c is .reloc in /cygdrive/c/windows/SYSTEM32/CRYPTSP.dll
+        0x00007ffd48001000 - 0x00007ffd48023bf5 is .text in /cygdrive/c/windows/system32/rsaenh.dll
+        0x00007ffd48024000 - 0x00007ffd4802b6ee is .rdata in /cygdrive/c/windows/system32/rsaenh.dll
+        0x00007ffd4802c000 - 0x00007ffd4802c400 is .data in /cygdrive/c/windows/system32/rsaenh.dll
+        0x00007ffd4802d000 - 0x00007ffd4802de94 is .pdata in /cygdrive/c/windows/system32/rsaenh.dll
+        0x00007ffd4802e000 - 0x00007ffd4802e0b8 is .didat in /cygdrive/c/windows/system32/rsaenh.dll
+        0x00007ffd4802f000 - 0x00007ffd48032ec0 is .rsrc in /cygdrive/c/windows/system32/rsaenh.dll
+        0x00007ffd48033000 - 0x00007ffd4803309c is .reloc in /cygdrive/c/windows/system32/rsaenh.dll
+        0x00007ffd494d1000 - 0x00007ffd494ea15a is .text in /cygdrive/c/windows/System32/bcrypt.dll
+        0x00007ffd494eb000 - 0x00007ffd494f07b8 is .rdata in /cygdrive/c/windows/System32/bcrypt.dll
+        0x00007ffd494f1000 - 0x00007ffd494f1200 is .data in /cygdrive/c/windows/System32/bcrypt.dll
+        0x00007ffd494f2000 - 0x00007ffd494f3254 is .pdata in /cygdrive/c/windows/System32/bcrypt.dll
+        0x00007ffd494f4000 - 0x00007ffd494f4048 is .didat in /cygdrive/c/windows/System32/bcrypt.dll
+        0x00007ffd494f5000 - 0x00007ffd494f5af0 is .rsrc in /cygdrive/c/windows/System32/bcrypt.dll
+        0x00007ffd494f6000 - 0x00007ffd494f610c is .reloc in /cygdrive/c/windows/System32/bcrypt.dll
+        0x00007ffd470a1000 - 0x00007ffd4762f211 is .text in /cygdrive/c/windows/SYSTEM32/windows.storage.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd47630000 - 0x00007ffd477b3c5a is .rdata in /cygdrive/c/windows/SYSTEM32/windows.storage.dll
+        0x00007ffd477b4000 - 0x00007ffd477b7000 is .data in /cygdrive/c/windows/SYSTEM32/windows.storage.dll
+        0x00007ffd477bd000 - 0x00007ffd4780e780 is .pdata in /cygdrive/c/windows/SYSTEM32/windows.storage.dll
+        0x00007ffd4780f000 - 0x00007ffd47811048 is .didat in /cygdrive/c/windows/SYSTEM32/windows.storage.dll
+        0x00007ffd47812000 - 0x00007ffd47815498 is .rsrc in /cygdrive/c/windows/SYSTEM32/windows.storage.dll
+        0x00007ffd47816000 - 0x00007ffd478344c0 is .reloc in /cygdrive/c/windows/SYSTEM32/windows.storage.dll
+        0x00007ffd47851000 - 0x00007ffd47861d60 is .text in /cygdrive/c/windows/SYSTEM32/gpapi.dll
+        0x00007ffd47862000 - 0x00007ffd4786cf2e is .rdata in /cygdrive/c/windows/SYSTEM32/gpapi.dll
+        0x00007ffd4786d000 - 0x00007ffd4786dc00 is .data in /cygdrive/c/windows/SYSTEM32/gpapi.dll
+        0x00007ffd4786f000 - 0x00007ffd4786f99c is .pdata in /cygdrive/c/windows/SYSTEM32/gpapi.dll
+        0x00007ffd47870000 - 0x00007ffd47870010 is .didat in /cygdrive/c/windows/SYSTEM32/gpapi.dll
+        0x00007ffd47871000 - 0x00007ffd47871510 is .rsrc in /cygdrive/c/windows/SYSTEM32/gpapi.dll
+        0x00007ffd47872000 - 0x00007ffd4787228c is .reloc in /cygdrive/c/windows/SYSTEM32/gpapi.dll
+        0x00007ffd48f31000 - 0x00007ffd48f41ab3 is .text in /cygdrive/c/windows/SYSTEM32/profapi.dll
+        0x00007ffd48f42000 - 0x00007ffd48f48e98 is .rdata in /cygdrive/c/windows/SYSTEM32/profapi.dll
+        0x00007ffd48f49000 - 0x00007ffd48f49200 is .data in /cygdrive/c/windows/SYSTEM32/profapi.dll
+        0x00007ffd48f4a000 - 0x00007ffd48f4b398 is .pdata in /cygdrive/c/windows/SYSTEM32/profapi.dll
+        0x00007ffd48f4c000 - 0x00007ffd48f4c088 is .didat in /cygdrive/c/windows/SYSTEM32/profapi.dll
+        0x00007ffd48f4d000 - 0x00007ffd48f4d400 is .rsrc in /cygdrive/c/windows/SYSTEM32/profapi.dll
+        0x00007ffd48f4e000 - 0x00007ffd48f4e0a0 is .reloc in /cygdrive/c/windows/SYSTEM32/profapi.dll
+        0x00007ffd14301000 - 0x00007ffd143b9726 is .text in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVPPEX.DLL
+        0x00007ffd143ba000 - 0x00007ffd14404944 is .rdata in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVPPEX.DLL
+        0x00007ffd14405000 - 0x00007ffd144a6e00 is .data in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVPPEX.DLL
+        0x00007ffd144aa000 - 0x00007ffd144b36b4 is .pdata in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVPPEX.DLL
+        0x00007ffd144b4000 - 0x00007ffd144b415c is _RDATA in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVPPEX.DLL
+        0x00007ffd144b5000 - 0x00007ffd144b53a8 is .rsrc in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVPPEX.DLL
+        0x00007ffd144b6000 - 0x00007ffd144b6dd8 is .reloc in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVPPEX.DLL
+        0x00007ffd41c61000 - 0x00007ffd41c85132 is .text in /cygdrive/c/windows/SYSTEM32/dxcore.dll
+        0x00007ffd41c86000 - 0x00007ffd41c9150c is .rdata in /cygdrive/c/windows/SYSTEM32/dxcore.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd41c92000 - 0x00007ffd41c92800 is .data in /cygdrive/c/windows/SYSTEM32/dxcore.dll
+        0x00007ffd41c96000 - 0x00007ffd41c97e9c is .pdata in /cygdrive/c/windows/SYSTEM32/dxcore.dll
+        0x00007ffd41c98000 - 0x00007ffd41c98010 is .didat in /cygdrive/c/windows/SYSTEM32/dxcore.dll
+        0x00007ffd41c99000 - 0x00007ffd41c993d8 is .rsrc in /cygdrive/c/windows/SYSTEM32/dxcore.dll
+        0x00007ffd41c9a000 - 0x00007ffd41c9a288 is .reloc in /cygdrive/c/windows/SYSTEM32/dxcore.dll
+        0x00007ffd4a041000 - 0x00007ffd4a1148d1 is .text in /cygdrive/c/windows/System32/MSCTF.dll
+        0x00007ffd4a115000 - 0x00007ffd4a1408d0 is .rdata in /cygdrive/c/windows/System32/MSCTF.dll
+        0x00007ffd4a141000 - 0x00007ffd4a141e00 is .data in /cygdrive/c/windows/System32/MSCTF.dll
+        0x00007ffd4a144000 - 0x00007ffd4a150108 is .pdata in /cygdrive/c/windows/System32/MSCTF.dll
+        0x00007ffd4a151000 - 0x00007ffd4a1510b8 is .didat in /cygdrive/c/windows/System32/MSCTF.dll
+        0x00007ffd4a152000 - 0x00007ffd4a152558 is .rsrc in /cygdrive/c/windows/System32/MSCTF.dll
+        0x00007ffd4a153000 - 0x00007ffd4a154cdc is .reloc in /cygdrive/c/windows/System32/MSCTF.dll
+        0x00007ffd49ec1000 - 0x00007ffd49f557f9 is .text in /cygdrive/c/windows/System32/OLEAUT32.dll
+        0x00007ffd49f56000 - 0x00007ffd49f7b784 is .rdata in /cygdrive/c/windows/System32/OLEAUT32.dll
+        0x00007ffd49f7c000 - 0x00007ffd49f7ca00 is .data in /cygdrive/c/windows/System32/OLEAUT32.dll
+        0x00007ffd49f7f000 - 0x00007ffd49f87ee0 is .pdata in /cygdrive/c/windows/System32/OLEAUT32.dll
+        0x00007ffd49f88000 - 0x00007ffd49f881c0 is .didat in /cygdrive/c/windows/System32/OLEAUT32.dll
+        0x00007ffd49f89000 - 0x00007ffd49f897a8 is .rsrc in /cygdrive/c/windows/System32/OLEAUT32.dll
+        0x00007ffd49f8a000 - 0x00007ffd49f8c98c is .reloc in /cygdrive/c/windows/System32/OLEAUT32.dll
+        0x00000003f7b51000 - 0x00000003f7ba6030 is .text in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7ba7000 - 0x00000003f7ba7060 is .data in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7ba8000 - 0x00000003f7bb6508 is .rdata in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7bb7000 - 0x00000003f7bb7035 is .buildid in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7bb8000 - 0x00000003f7bc09ac is .pdata in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7bc1000 - 0x00000003f7bc7858 is .xdata in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7bc8000 - 0x00000003f7bcd2b0 is .bss in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7bce000 - 0x00000003f7be4341 is .edata in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7be5000 - 0x00000003f7be8080 is .idata in /usr/bin/cygnativeGLthunk.dll
+        0x00000003f7be9000 - 0x00000003f7be9018 is .reloc in /usr/bin/cygnativeGLthunk.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd4a6f1000 - 0x00007ffd4a75bcf5 is .text in /cygdrive/c/windows/System32/clbcatq.dll
+        0x00007ffd4a75c000 - 0x00007ffd4a788030 is .rdata in /cygdrive/c/windows/System32/clbcatq.dll
+        0x00007ffd4a789000 - 0x00007ffd4a78a400 is .data in /cygdrive/c/windows/System32/clbcatq.dll
+        0x00007ffd4a78f000 - 0x00007ffd4a793530 is .pdata in /cygdrive/c/windows/System32/clbcatq.dll
+        0x00007ffd4a794000 - 0x00007ffd4a794100 is .didat in /cygdrive/c/windows/System32/clbcatq.dll
+        0x00007ffd4a795000 - 0x00007ffd4a796f00 is .rsrc in /cygdrive/c/windows/System32/clbcatq.dll
+        0x00007ffd4a797000 - 0x00007ffd4a798bbc is .reloc in /cygdrive/c/windows/System32/clbcatq.dll
+        0x00007ffd074b1000 - 0x00007ffd089dca55 is .text in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVOGLV64.DLL
+        0x00007ffd089dd000 - 0x00007ffd09a993bc is .rdata in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVOGLV64.DLL
+        0x00007ffd09a9a000 - 0x00007ffd09c27c00 is .data in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVOGLV64.DLL
+        0x00007ffd09cbe000 - 0x00007ffd09da95f0 is .pdata in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVOGLV64.DLL
+        0x00007ffd09daa000 - 0x00007ffd09dbfc04 is _RDATA in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVOGLV64.DLL
+        0x00007ffd09dc0000 - 0x00007ffd09dc0480 is .rsrc in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVOGLV64.DLL
+        0x00007ffd09dc1000 - 0x00007ffd09e02e78 is .reloc in /cygdrive/b/pnplib/N_64.10.0_32.0.15.8142_DCH/NVOGLV64.DLL
+        0x00007ffd499a1000 - 0x00007ffd49a79db9 is .text in /cygdrive/c/windows/System32/SETUPAPI.dll
+        0x00007ffd49a7a000 - 0x00007ffd49ab203e is .rdata in /cygdrive/c/windows/System32/SETUPAPI.dll
+        0x00007ffd49ab3000 - 0x00007ffd49ab3400 is .data in /cygdrive/c/windows/System32/SETUPAPI.dll
+        0x00007ffd49ab5000 - 0x00007ffd49abb9cc is .pdata in /cygdrive/c/windows/System32/SETUPAPI.dll
+        0x00007ffd49abc000 - 0x00007ffd49abc9c0 is .didat in /cygdrive/c/windows/System32/SETUPAPI.dll
+        0x00007ffd49abd000 - 0x00007ffd49e0d370 is .rsrc in /cygdrive/c/windows/System32/SETUPAPI.dll
+        0x00007ffd49e0e000 - 0x00007ffd49e0e858 is .reloc in /cygdrive/c/windows/System32/SETUPAPI.dll
+        0x00007ffd44b81000 - 0x00007ffd44b8a341 is .text in /cygdrive/c/windows/SYSTEM32/WTSAPI32.dll
+        0x00007ffd44b8b000 - 0x00007ffd44b8e368 is .rdata in /cygdrive/c/windows/SYSTEM32/WTSAPI32.dll
+        0x00007ffd44b8f000 - 0x00007ffd44b8f200 is .data in /cygdrive/c/windows/SYSTEM32/WTSAPI32.dll
+        0x00007ffd44b90000 - 0x00007ffd44b90750 is .pdata in /cygdrive/c/windows/SYSTEM32/WTSAPI32.dll
+        0x00007ffd44b91000 - 0x00007ffd44b91208 is .didat in /cygdrive/c/windows/SYSTEM32/WTSAPI32.dll
+        0x00007ffd44b92000 - 0x00007ffd44b92440 is .rsrc in /cygdrive/c/windows/SYSTEM32/WTSAPI32.dll
+        0x00007ffd44b93000 - 0x00007ffd44b9309c is .reloc in /cygdrive/c/windows/SYSTEM32/WTSAPI32.dll
+        0x00007ffd47c91000 - 0x00007ffd47cb2a30 is .text in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd47cb3000 - 0x00007ffd47cb375c is ERRATA in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+        0x00007ffd47cb4000 - 0x00007ffd47cbb428 is .rdata in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+        0x00007ffd47cbc000 - 0x00007ffd47cbc200 is .data in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+        0x00007ffd47cbe000 - 0x00007ffd47cbf7e8 is .pdata in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+        0x00007ffd47cc0000 - 0x00007ffd47cc02c0 is .didat in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+        0x00007ffd47cc1000 - 0x00007ffd47cc1520 is .rsrc in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+        0x00007ffd47cc2000 - 0x00007ffd47cc2200 is .reloc in /cygdrive/c/windows/SYSTEM32/ntmarta.dll
+        0x00007ffd39161000 - 0x00007ffd3c0f176b is .text in /cygdrive/c/Windows/System32/DriverStore/FileRepository/nv_dispi.inf_amd64_7fd577289a6378a5/nvgpucomp64.dll
+        0x00007ffd3c0f2000 - 0x00007ffd3cb8c99c is .rdata in /cygdrive/c/Windows/System32/DriverStore/FileRepository/nv_dispi.inf_amd64_7fd577289a6378a5/nvgpucomp64.dll
+        0x00007ffd3cb8d000 - 0x00007ffd3ccace00 is .data in /cygdrive/c/Windows/System32/DriverStore/FileRepository/nv_dispi.inf_amd64_7fd577289a6378a5/nvgpucomp64.dll
+        0x00007ffd3cd40000 - 0x00007ffd3ceaed2c is .pdata in /cygdrive/c/Windows/System32/DriverStore/FileRepository/nv_dispi.inf_amd64_7fd577289a6378a5/nvgpucomp64.dll
+        0x00007ffd3ceaf000 - 0x00007ffd3ceaf15c is _RDATA in /cygdrive/c/Windows/System32/DriverStore/FileRepository/nv_dispi.inf_amd64_7fd577289a6378a5/nvgpucomp64.dll
+        0x00007ffd3ceb0000 - 0x00007ffd3ceb03e0 is .rsrc in /cygdrive/c/Windows/System32/DriverStore/FileRepository/nv_dispi.inf_amd64_7fd577289a6378a5/nvgpucomp64.dll
+        0x00007ffd3ceb1000 - 0x00007ffd3cef3864 is .reloc in /cygdrive/c/Windows/System32/DriverStore/FileRepository/nv_dispi.inf_amd64_7fd577289a6378a5/nvgpucomp64.dll
+        0x00007ffd48e61000 - 0x00007ffd48e7233c is .text in /cygdrive/c/windows/SYSTEM32/powrprof.dll
+        0x00007ffd48e73000 - 0x00007ffd48e7c9b0 is .rdata in /cygdrive/c/windows/SYSTEM32/powrprof.dll
+        0x00007ffd48e7d000 - 0x00007ffd48e7d400 is .data in /cygdrive/c/windows/SYSTEM32/powrprof.dll
+        0x00007ffd48e7e000 - 0x00007ffd48e7f0f8 is .pdata in /cygdrive/c/windows/SYSTEM32/powrprof.dll
+        0x00007ffd48e80000 - 0x00007ffd48e800b0 is .didat in /cygdrive/c/windows/SYSTEM32/powrprof.dll
+        0x00007ffd48e81000 - 0x00007ffd48ea97d0 is .rsrc in /cygdrive/c/windows/SYSTEM32/powrprof.dll
+        0x00007ffd48eaa000 - 0x00007ffd48eaa224 is .reloc in /cygdrive/c/windows/SYSTEM32/powrprof.dll
+        0x00007ffd48e41000 - 0x00007ffd48e49714 is .text in /cygdrive/c/windows/SYSTEM32/UMPDC.dll
+--Type <RET> for more, q to quit, c to continue without paging--
+        0x00007ffd48e4a000 - 0x00007ffd48e4d8c4 is .rdata in /cygdrive/c/windows/SYSTEM32/UMPDC.dll
+        0x00007ffd48e4e000 - 0x00007ffd48e4e200 is .data in /cygdrive/c/windows/SYSTEM32/UMPDC.dll
+        0x00007ffd48e4f000 - 0x00007ffd48e4fb4c is .pdata in /cygdrive/c/windows/SYSTEM32/UMPDC.dll
+        0x00007ffd48e50000 - 0x00007ffd48e50038 is .didat in /cygdrive/c/windows/SYSTEM32/UMPDC.dll
+        0x00007ffd48e51000 - 0x00007ffd48e5104c is .reloc in /cygdrive/c/windows/SYSTEM32/UMPDC.dll
+        0x00007ffd48ad1000 - 0x00007ffd48aff872 is .text in /cygdrive/c/windows/SYSTEM32/WINSTA.dll
+        0x00007ffd48b00000 - 0x00007ffd48b1ffce is .rdata in /cygdrive/c/windows/SYSTEM32/WINSTA.dll
+        0x00007ffd48b20000 - 0x00007ffd48b20600 is .data in /cygdrive/c/windows/SYSTEM32/WINSTA.dll
+        0x00007ffd48b24000 - 0x00007ffd48b26394 is .pdata in /cygdrive/c/windows/SYSTEM32/WINSTA.dll
+        0x00007ffd48b27000 - 0x00007ffd48b27140 is .didat in /cygdrive/c/windows/SYSTEM32/WINSTA.dll
+        0x00007ffd48b28000 - 0x00007ffd48b283f0 is .rsrc in /cygdrive/c/windows/SYSTEM32/WINSTA.dll
+        0x00007ffd48b29000 - 0x00007ffd48b29fbc is .reloc in /cygdrive/c/windows/SYSTEM32/WINSTA.dll
+        0x00000004c8f11000 - 0x00000004c8f11670 is .text in /home/Administrator/libcyxv.so
+        0x00000004c8f12000 - 0x00000004c8f12060 is .data in /home/Administrator/libcyxv.so
+        0x00000004c8f13000 - 0x00000004c8f13218 is .rdata in /home/Administrator/libcyxv.so
+        0x00000004c8f14000 - 0x00000004c8f14035 is .buildid in /home/Administrator/libcyxv.so
+        0x00000004c8f15000 - 0x00000004c8f150a8 is .pdata in /home/Administrator/libcyxv.so
+        0x00000004c8f16000 - 0x00000004c8f16054 is .xdata in /home/Administrator/libcyxv.so
+        0x00000004c8f17000 - 0x00000004c8f171d0 is .bss in /home/Administrator/libcyxv.so
+        0x00000004c8f18000 - 0x00000004c8f1808c is .edata in /home/Administrator/libcyxv.so
+        0x00000004c8f19000 - 0x00000004c8f19248 is .idata in /home/Administrator/libcyxv.so
+        0x00000004c8f1a000 - 0x00000004c8f1a018 is .reloc in /home/Administrator/libcyxv.so
+
+(gdb) find /b 0x10058e000, 0x1005cc7a8, "XVideo", 0
+0x10058e614
+0x10058e642
+0x10058ea34
+0x10058ea62
+0x1005ae06c <XWin!DeviceProximityMask+18192>
+0x1005ae9a6 <XWin!DeviceProximityMask+20554>
+0x1005aea96 <XWin!DeviceProximityMask+20794>
+0x1005aeb44 <XWin!DeviceProximityMask+20968>
+0x1005aec46 <XWin!DeviceProximityMask+21226>
+0x1005aee26 <XWin!DeviceProximityMask+21706>
+0x1005af048 <XWin!DeviceProximityMask+22252>
+0x1005af04e <XWin!DeviceProximityMask+22258>
+0x1005af072 <XWin!DeviceProximityMask+22294>
+0x1005af090 <XWin!DeviceProximityMask+22324>
+0x1005af180 <XWin!DeviceProximityMask+22564>
+0x1005af186 <XWin!DeviceProximityMask+22570>
+0x1005be8eb <XWin!IID_ID3D12Debug1+11>
+0x1005c29e0 <XWin!PKEY_Contact_OtherAddress3Country+16>
+0x1005c7801 <XWin!PKEY_Photo_DateTaken+17>
+19 patterns found.
+(gdb) find /b 0xa00000000, +0x1000000, "XVideo", 0
+0xa0002cb20
+0xa000305f8
+0xa0003d4c2
+0xa0003ed51
+0xa0003ef51
+0xa0003f151
+0xa00040af9
+0xa000436fb
+0xa000462fd
+0xa00047bc0
+0xa00047fd0
+0xa000483e0
+0xa00049600
+0xa0004bff0
+warning: Unable to access 16000 bytes of target memory at 0xa0007ec72, halting search.
+14 patterns found.
+(gdb)
+
+(gdb) disass AddExtension
+Dump of assembler code for function XWin!AddExtension:
+   0x000000010048a4e0 <+0>:     push   %r14
+   0x000000010048a4e2 <+2>:     push   %r13
+   0x000000010048a4e4 <+4>:     push   %r12
+   0x000000010048a4e6 <+6>:     push   %rbp
+   0x000000010048a4e7 <+7>:     push   %rdi
+   0x000000010048a4e8 <+8>:     push   %rsi
+   0x000000010048a4e9 <+9>:     push   %rbx
+   0x000000010048a4ea <+10>:    sub    $0x20,%rsp
+   0x000000010048a4ee <+14>:    mov    0x80(%rsp),%r13
+   0x000000010048a4f6 <+22>:    mov    0x90(%rsp),%r14
+   0x000000010048a4fe <+30>:    test   %r13,%r13
+   0x000000010048a501 <+33>:    sete   %al
+   0x000000010048a504 <+36>:    test   %r14,%r14
+   0x000000010048a507 <+39>:    mov    %edx,%esi
+   0x000000010048a509 <+41>:    sete   %dl
+   0x000000010048a50c <+44>:    mov    %rcx,%r12
+   0x000000010048a50f <+47>:    mov    %r8d,%edi
+   0x000000010048a512 <+50>:    or     %dl,%al
+   0x000000010048a514 <+52>:    mov    %r9,%rbp
+   0x000000010048a517 <+55>:    jne    0x10048a664 <XWin!AddExtension+388>
+   0x000000010048a51d <+61>:    test   %r9,%r9
+   0x000000010048a520 <+64>:    je     0x10048a664 <XWin!AddExtension+388>
+   0x000000010048a526 <+70>:    mov    0xfc7f8(%rip),%eax        # 0x100586d24 <lastEvent>
+   0x000000010048a52c <+76>:    add    %esi,%eax
+   0x000000010048a52e <+78>:    cmp    $0x80,%eax
+   0x000000010048a533 <+83>:    jg     0x10048a650 <XWin!AddExtension+368>
+   0x000000010048a539 <+89>:    mov    0xfc7e1(%rip),%eax        # 0x100586d20 <XWin!SmartScheduleSlice+72>
+   0x000000010048a53f <+95>:    add    %r8d,%eax
+--Type <RET> for more, q to quit, c to continue without paging--
+   0x000000010048a542 <+98>:    cmp    $0xff,%eax
+   0x000000010048a547 <+103>:   jg     0x10048a650 <XWin!AddExtension+368>
+   0x000000010048a54d <+109>:   mov    $0x1,%edx
+   0x000000010048a552 <+114>:   mov    $0x48,%ecx
+   0x000000010048a557 <+119>:   call   0x10057b1a0 <XWin!RemoveInputDeviceTraces+4416>
+   0x000000010048a55c <+124>:   mov    %rax,%rbx
+   0x000000010048a55f <+127>:   test   %rax,%rax
+   0x000000010048a562 <+130>:   je     0x10048a664 <XWin!AddExtension+388>
+   0x000000010048a568 <+136>:   lea    0x40(%rax),%rcx
+   0x000000010048a56c <+140>:   mov    $0x2,%edx
+   0x000000010048a571 <+145>:   call   0x100496a30 <dixAllocatePrivates>
+   0x000000010048a576 <+150>:   test   %eax,%eax
+   0x000000010048a578 <+152>:   je     0x10048a6b0 <XWin!AddExtension+464>
+   0x000000010048a57e <+158>:   mov    %r12,%rcx
+   0x000000010048a581 <+161>:   call   0x10057b9e0 <XWin!RemoveInputDeviceTraces+6528>
+   0x000000010048a586 <+166>:   mov    %rax,0x10(%rbx)
+   0x000000010048a58a <+170>:   test   %rax,%rax
+   0x000000010048a58d <+173>:   je     0x10048a699 <XWin!AddExtension+441>
+   0x000000010048a593 <+179>:   mov    0x18a886(%rip),%r12d        # 0x100614e20 <XWin!EventCallback+3128>
+   0x000000010048a59a <+186>:   mov    0x18a887(%rip),%rcx        # 0x100614e28 <XWin!EventCallback+3136>
+   0x000000010048a5a1 <+193>:   mov    $0x8,%r8d
+   0x000000010048a5a7 <+199>:   lea    0x1(%r12),%edx
+   0x000000010048a5ac <+204>:   movslq %edx,%rdx
+   0x000000010048a5af <+207>:   call   0x10057b740 <XWin!RemoveInputDeviceTraces+5856>
+   0x000000010048a5b4 <+212>:   test   %rax,%rax
+   0x000000010048a5b7 <+215>:   je     0x10048a690 <XWin!AddExtension+432>
+   0x000000010048a5bd <+221>:   movslq %r12d,%rdx
+   0x000000010048a5c0 <+224>:   mov    %rax,0x18a861(%rip)        # 0x100614e28 <XWin!EventCallback+3136>
+   0x000000010048a5c7 <+231>:   mov    %rbx,(%rax,%rdx,8)
+--Type <RET> for more, q to quit, c to continue without paging--
+   0x000000010048a5cb <+235>:   mov    0x88(%rsp),%rax
+   0x000000010048a5d3 <+243>:   mov    %r12d,(%rbx)
+   0x000000010048a5d6 <+246>:   sub    $0xffffff80,%r12d
+   0x000000010048a5da <+250>:   mov    %rax,0x8(%rbx)
+   0x000000010048a5de <+254>:   mov    0x13033b(%rip),%rax        # 0x1005ba920 <glxServer+3904>
+   0x000000010048a5e5 <+261>:   mov    %r12d,0x18(%rbx)
+   0x000000010048a5e9 <+265>:   movslq %r12d,%r12
+   0x000000010048a5ec <+268>:   mov    %rbp,(%rax,%r12,8)
+   0x000000010048a5f0 <+272>:   mov    0x130679(%rip),%rax        # 0x1005bac70 <glxServer+4752>
+   0x000000010048a5f7 <+279>:   addl   $0x1,0x18a822(%rip)        # 0x100614e20 <XWin!EventCallback+3128>
+   0x000000010048a5fe <+286>:   mov    %r13,(%rax,%r12,8)
+   0x000000010048a602 <+290>:   xor    %eax,%eax
+   0x000000010048a604 <+292>:   mov    %r14,0x38(%rbx)
+   0x000000010048a608 <+296>:   test   %esi,%esi
+   0x000000010048a60a <+298>:   je     0x10048a61d <XWin!AddExtension+317>
+   0x000000010048a60c <+300>:   mov    0xfc712(%rip),%edx        # 0x100586d24 <lastEvent>
+   0x000000010048a612 <+306>:   lea    (%rdx,%rsi,1),%eax
+   0x000000010048a615 <+309>:   mov    %edx,%esi
+   0x000000010048a617 <+311>:   mov    %eax,0xfc707(%rip)        # 0x100586d24 <lastEvent>
+   0x000000010048a61d <+317>:   mov    %eax,0x20(%rbx)
+   0x000000010048a620 <+320>:   mov    %esi,0x1c(%rbx)
+   0x000000010048a623 <+323>:   test   %edi,%edi
+   0x000000010048a625 <+325>:   je     0x10048a680 <XWin!AddExtension+416>
+   0x000000010048a627 <+327>:   mov    0xfc6f3(%rip),%eax        # 0x100586d20 <XWin!SmartScheduleSlice+72>
+   0x000000010048a62d <+333>:   add    %eax,%edi
+   0x000000010048a62f <+335>:   movd   %eax,%xmm0
+   0x000000010048a633 <+339>:   movd   %edi,%xmm1
+   0x000000010048a637 <+343>:   mov    %edi,0xfc6e3(%rip)        # 0x100586d20 <XWin!SmartScheduleSlice+72>
+   0x000000010048a63d <+349>:   punpckldq %xmm1,%xmm0
+--Type <RET> for more, q to quit, c to continue without paging--
+   0x000000010048a641 <+353>:   movq   %xmm0,0x24(%rbx)
+   0x000000010048a646 <+358>:   jmp    0x10048a666 <XWin!AddExtension+390>
+   0x000000010048a648 <+360>:   nopl   0x0(%rax,%rax,1)
+   0x000000010048a650 <+368>:   mov    %r12,%r8
+   0x000000010048a653 <+371>:   lea    0x1194c6(%rip),%rdx        # 0x1005a3b20 <XWin!FbMergeRopBits+12448>
+   0x000000010048a65a <+378>:   mov    $0x5,%ecx
+   0x000000010048a65f <+383>:   call   0x10054f970 <XWin!LogMessage>
+   0x000000010048a664 <+388>:   xor    %ebx,%ebx
+   0x000000010048a666 <+390>:   mov    %rbx,%rax
+   0x000000010048a669 <+393>:   add    $0x20,%rsp
+   0x000000010048a66d <+397>:   pop    %rbx
+   0x000000010048a66e <+398>:   pop    %rsi
+   0x000000010048a66f <+399>:   pop    %rdi
+   0x000000010048a670 <+400>:   pop    %rbp
+   0x000000010048a671 <+401>:   pop    %r12
+   0x000000010048a673 <+403>:   pop    %r13
+   0x000000010048a675 <+405>:   pop    %r14
+   0x000000010048a677 <+407>:   ret
+   0x000000010048a678 <+408>:   nopl   0x0(%rax,%rax,1)
+   0x000000010048a680 <+416>:   movq   $0x0,0x24(%rbx)
+   0x000000010048a688 <+424>:   jmp    0x10048a666 <XWin!AddExtension+390>
+   0x000000010048a68a <+426>:   nopw   0x0(%rax,%rax,1)
+   0x000000010048a690 <+432>:   mov    0x10(%rbx),%rcx
+   0x000000010048a694 <+436>:   call   0x10057b340 <XWin!RemoveInputDeviceTraces+4832>
+   0x000000010048a699 <+441>:   mov    0x40(%rbx),%rcx
+   0x000000010048a69d <+445>:   mov    $0x2,%edx
+   0x000000010048a6a2 <+450>:   call   0x100496b40 <dixFreePrivates>
+   0x000000010048a6a7 <+455>:   nopw   0x0(%rax,%rax,1)
+   0x000000010048a6b0 <+464>:   mov    %rbx,%rcx
+--Type <RET> for more, q to quit, c to continue without paging--
+   0x000000010048a6b3 <+467>:   call   0x10057b340 <XWin!RemoveInputDeviceTraces+4832>
+   0x000000010048a6b8 <+472>:   jmp    0x10048a664 <XWin!AddExtension+388>
+   0x000000010048a6ba <+474>:   nopw   0x0(%rax,%rax,1)
+End of assembler dump.
+(gdb)
+
+(gdb) set $bad_req = ((void**)0x1005ba920)[255]
+(gdb) set $i = 128
+(gdb) while ($i < 255)
+ >set $handler = ((void**)0x1005ba920)[$i]
+ >if ($handler == $bad_req || $handler == 0)
+  >printf "🎉 找到空位！Opcode [%d] 是空的位址: %p\n", $i, $handler
+  >end
+ >set $i = $i + 1
+ >end
+🎉 找到空位！Opcode [129] 是空的位址: (nil)
+🎉 找到空位！Opcode [131] 是空的位址: (nil)
+🎉 找到空位！Opcode [133] 是空的位址: (nil)
+🎉 找到空位！Opcode [135] 是空的位址: (nil)
+🎉 找到空位！Opcode [137] 是空的位址: (nil)
+🎉 找到空位！Opcode [139] 是空的位址: (nil)
+🎉 找到空位！Opcode [141] 是空的位址: (nil)
+🎉 找到空位！Opcode [143] 是空的位址: (nil)
+🎉 找到空位！Opcode [145] 是空的位址: (nil)
+🎉 找到空位！Opcode [147] 是空的位址: (nil)
+🎉 找到空位！Opcode [149] 是空的位址: (nil)
+🎉 找到空位！Opcode [151] 是空的位址: (nil)
+🎉 找到空位！Opcode [153] 是空的位址: (nil)
+🎉 找到空位！Opcode [155] 是空的位址: (nil)
+🎉 找到空位！Opcode [157] 是空的位址: (nil)
+🎉 找到空位！Opcode [159] 是空的位址: (nil)
+🎉 找到空位！Opcode [161] 是空的位址: (nil)
+🎉 找到空位！Opcode [163] 是空的位址: (nil)
+🎉 找到空位！Opcode [165] 是空的位址: (nil)
+🎉 找到空位！Opcode [167] 是空的位址: (nil)
+🎉 找到空位！Opcode [169] 是空的位址: (nil)
+🎉 找到空位！Opcode [171] 是空的位址: (nil)
+🎉 找到空位！Opcode [173] 是空的位址: (nil)
+🎉 找到空位！Opcode [175] 是空的位址: (nil)
+🎉 找到空位！Opcode [177] 是空的位址: (nil)
+🎉 找到空位！Opcode [179] 是空的位址: (nil)
+🎉 找到空位！Opcode [181] 是空的位址: (nil)
+🎉 找到空位！Opcode [183] 是空的位址: (nil)
+🎉 找到空位！Opcode [185] 是空的位址: (nil)
+--Type <RET> for more, q to quit, c to continue without paging--
+🎉 找到空位！Opcode [187] 是空的位址: (nil)
+🎉 找到空位！Opcode [189] 是空的位址: (nil)
+🎉 找到空位！Opcode [191] 是空的位址: (nil)
+🎉 找到空位！Opcode [193] 是空的位址: (nil)
+🎉 找到空位！Opcode [195] 是空的位址: (nil)
+🎉 找到空位！Opcode [197] 是空的位址: (nil)
+🎉 找到空位！Opcode [199] 是空的位址: (nil)
+🎉 找到空位！Opcode [201] 是空的位址: (nil)
+🎉 找到空位！Opcode [203] 是空的位址: (nil)
+🎉 找到空位！Opcode [205] 是空的位址: (nil)
+🎉 找到空位！Opcode [207] 是空的位址: (nil)
+🎉 找到空位！Opcode [209] 是空的位址: (nil)
+🎉 找到空位！Opcode [211] 是空的位址: (nil)
+🎉 找到空位！Opcode [213] 是空的位址: (nil)
+🎉 找到空位！Opcode [215] 是空的位址: (nil)
+🎉 找到空位！Opcode [217] 是空的位址: (nil)
+🎉 找到空位！Opcode [219] 是空的位址: (nil)
+🎉 找到空位！Opcode [221] 是空的位址: (nil)
+🎉 找到空位！Opcode [223] 是空的位址: (nil)
+🎉 找到空位！Opcode [225] 是空的位址: (nil)
+🎉 找到空位！Opcode [227] 是空的位址: (nil)
+🎉 找到空位！Opcode [229] 是空的位址: (nil)
+🎉 找到空位！Opcode [231] 是空的位址: (nil)
+🎉 找到空位！Opcode [233] 是空的位址: (nil)
+🎉 找到空位！Opcode [235] 是空的位址: (nil)
+🎉 找到空位！Opcode [237] 是空的位址: (nil)
+🎉 找到空位！Opcode [239] 是空的位址: (nil)
+🎉 找到空位！Opcode [241] 是空的位址: (nil)
+🎉 找到空位！Opcode [243] 是空的位址: (nil)
+--Type <RET> for more, q to quit, c to continue without paging--
+🎉 找到空位！Opcode [245] 是空的位址: (nil)
+🎉 找到空位！Opcode [247] 是空的位址: (nil)
+🎉 找到空位！Opcode [249] 是空的位址: (nil)
+🎉 找到空位！Opcode [251] 是空的位址: (nil)
+🎉 找到空位！Opcode [253] 是空的位址: (nil)
+(gdb)
+
+Thread 1 "XWin" received signal SIGINT, Interrupt.
+p $func0x00007ffd490fa104 in win32u!NtUserMsgWaitForMultipleObjectsEx () from /cygdrive/c/windows/System32/win32u.dll
+(gdb) Quit
+(gdb) p $func
+$1 = void
+(gdb) set $lpflOldProtect = (unsigned long*)malloc(8)
+(gdb) call (int)VirtualProtect(0x1005ba920, 4096, 0x40, $lpflOldProtect)
+$2 = 0
+(gdb) set $so = (void*)dlopen("./libcyxv.so", 2)
+(gdb) set $func = (void*)dlsym($so, "FakeXvDispatch")
+(gdb) set $temp_prot = (void*)0x1005f0100
+(gdb) call (int)VirtualProtect(0x1005ba920, 4096, 0x40, $temp_prot)
+$3 = 1
+(gdb) set ((void**)0x1005ba920)[135] = $func
+(gdb) c
+Continuing.
