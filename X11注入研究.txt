@@ -1,0 +1,285 @@
+明白，作為 Staff Engineer，保持源碼的純潔性與編碼相容性是基本功。我們將使用純英文編寫注入器，確保在 Cygwin 環境下編譯時不會產生任何編碼干擾。
+
+這段程式碼的邏輯是：利用 `LD_PRELOAD` 在 `XWin.exe` 啟動時注入，攔截並強行註冊 `XVideo` 名稱。
+
+### 🛠️ CyXV Loader: `fake_xv_init.c`
+
+```c
+#include <X11/X.h>
+#include <X11/Xproto.h>
+#include <stdio.h>
+#include <dlfcn.h>
+
+/* * Xserver Extension Entry Point Structure 
+ * Based on X.Org Server source: xserver/include/extnsionst.h
+ */
+typedef void (*AddExtensionProc)(
+    const char *name, 
+    int events, 
+    int errors,
+    int (*proc)(void*), 
+    int (*swapped_proc)(void*),
+    void (*reset_proc)(void*), 
+    int (*minor_opcode_proc)(void*)
+);
+
+/* Fake Dispatcher for XVideo requests */
+static int 
+FakeXvDispatch(void *client) 
+{
+    /* * Future: Add D3D/GDI backend forwarding here.
+     * Currently returns Success to prevent client crash.
+     */
+    return 0; 
+}
+
+/* * Constructor: Triggered when the library is loaded via LD_PRELOAD.
+ */
+void __attribute__((constructor)) 
+cyxv_extension_init(void) 
+{
+    void *handle;
+    AddExtensionProc add_ext;
+
+    fprintf(stderr, "CyXV-Status: Starting injection into XWin...\n");
+
+    /* Get handle of the current process (XWin.exe) */
+    handle = dlopen(NULL, RTLD_LAZY);
+    if (!handle) {
+        fprintf(stderr, "CyXV-Error: dlopen failed: %s\n", dlerror());
+        return;
+    }
+
+    /* * Locate 'AddExtension' symbol. 
+     * In X.Org server, this is the core function to register extensions.
+     */
+    add_ext = (AddExtensionProc)dlsym(handle, "AddExtension");
+    
+    if (add_ext) {
+        /* * Force register "XVideo" extension name.
+         * Events/Errors set to 0 for initial naming test.
+         */
+        add_ext("XVideo", 0, 0, FakeXvDispatch, FakeXvDispatch, NULL, NULL);
+        fprintf(stderr, "CyXV-Status: XVideo extension successfully registered in memory.\n");
+    } else {
+        fprintf(stderr, "CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.\n");
+    }
+
+    dlclose(handle);
+}
+
+```
+
+---
+
+### 🔨 編譯與運行指令
+
+在你的 Cygwin 終端執行以下流程：
+
+1. **編譯為共享庫**：
+```bash
+gcc -shared -fPIC fake_xv_init.c -o libcyxv_inject.so -ldl
+
+```
+
+
+2. **驗證符號表（可選）**：
+```bash
+nm libcyxv_inject.so | grep cyxv_extension_init
+
+```
+
+
+3. **啟動注入式 XWin**：
+```bash
+# 殺掉舊進程
+pkill XWin
+# 注入並啟動
+export LD_PRELOAD=$(pwd)/libcyxv_inject.so
+XWin -multiwindow -listen tcp -wgl &
+
+```
+
+
+
+---
+
+### 🔍 430 的工程要點
+
+* **Symbol 依賴**：這段源碼預設 `XWin.exe` 保留了 `AddExtension` 符號。如果執行後噴出 `Could not find AddExtension symbol`，代表官方在編譯 `XWin` 時進行了全域符號消除（Strip），那時我們就必須透過核心地址偏移量（Offset）或特徵碼動態定位地址。
+* **名分達成**：只要 `AddExtension` 成功執行，你再次跑 `xdpyinfo -ext XV` 時，應該就能看到擴展列表出現 `XVideo`。
+
+**你現在先編譯這個 `libcyxv_inject.so` 跑跑看。如果 XWin 啟動日誌噴出 `successfully registered`，那就代表我們在不改二進制文件的狀況下，成功給了 CyXV 正式的「名分」。下一步就是看 `xdpyinfo` 的臉色了！**
+
+這是一個典型的「沈默的對話」。你執行了注入，但終端機除了 Shell 的作業管理訊息外，並沒有噴出我們在 `fake_xv_init.c` 裡寫的 `fprintf` 調試訊息。
+
+對於 Staff Engineer 來說，這種沈默通常意味著兩件事之一：要麼 `LD_PRELOAD` 根本沒被 `XWin` 加載，要麼 `AddExtension` 符號真的被官方給 `strip` 掉了。
+
+---
+
+### 🔍 診斷：為什麼沒有 Log 噴出來？
+
+1. **環境變數傳遞失敗**：當你使用 `&` 把 `XWin` 丟到背景時，有時 Cygwin 的 Shell 環境不會將 `LD_PRELOAD` 正確傳遞給子進程。
+2. **動態鏈結器拒絕**：如果 `XWin.exe` 具有某種安全標記（如 SetUID），系統會為了安全自動忽略 `LD_PRELOAD`（但在 Windows/Cygwin 上這較少見）。
+3. **依賴問題**：你的 `.so` 可能缺少某些 Cygwin 運行時的鏈結，導致加載失敗但沒報錯。
+
+---
+
+### 🛠️ 430 的「強制驗收」三部曲
+
+我們不要猜，直接用指令來揭穿 `XWin` 是否真的載入了你的注入器。
+
+#### 1. 查看進程的加載模組
+
+請在 `XWin` 啟動後執行：
+
+```bash
+grep "libcyxv_inject" /proc/$(pgrep XWin)/maps
+
+```
+
+* **如果噴出路徑**：代表載入成功，沒噴 Log 是因為 `AddExtension` 沒被找到。
+* **如果空空如也**：代表注入失敗，`LD_PRELOAD` 被無視了。
+
+#### 2. 強制輸出到文件 (排除終端干擾)
+
+有時候輸出被 `XWin` 重新導向了。我們試試把 Log 寫死：
+
+```bash
+# 殺掉舊的
+pkill XWin
+# 強制將 stderr 導向到一個文件
+export LD_PRELOAD=$(pwd)/libcyxv_inject.so
+XWin -multiwindow -listen tcp -wgl 2> cyxv_debug.log &
+# 查看結果
+cat cyxv_debug.log
+
+```
+
+#### 3. 檢查符號是否真的存在
+
+這是最關鍵的，如果 `XWin` 本身就沒這個符號，我們 `dlsym` 就會失敗：
+
+```bash
+nm /usr/bin/XWin.exe | grep "AddExtension"
+
+```
+
+* **如果 nm 報錯 `no symbols**`：代表 `XWin` 被 **stripped** 了。這時候我們得用「特徵碼定位」這種更硬核的黑客手段。
+
+---
+
+### 💡 430 的戰術建議
+
+既然你已經走到了這一步，代表你對「名分」的追求是認真的。
+
+**請先幫我跑一下 `grep ... /proc/$(pgrep XWin)/maps`。** 我需要確認你的這顆 `libcyxv_inject.so` 到底有沒有成功「混進」 `XWin.exe` 的內存空間。
+
+如果它進去了但還是沒噴 Log，那就代表我們該去挖 `XWin.exe` 的反組譯代碼找地址了。**你準備好要進到 `objdump` 的世界了嗎？**
+
+好消息是，**注入完全成功了**。你的 `.so` 已經精準地掛載到了 `XWin.exe` 的內存地址空間（`5C1C40000` 段），而且你的 `fprintf` 調試訊息也成功噴出來了。
+
+壞消息是，我們最擔心的工程障礙出現了：
+
+> **`CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.`**
+
+這證實了 Cygwin 官方在編譯 `XWin.exe` 時，把內部的函數符號表（Symbol Table）全刪了。`dlsym` 就像是在一個沒有門牌號碼的社區找人，它找不到名為 `AddExtension` 的入口。
+
+---
+
+### 🛠️ 430 的「暴力美學」：特徵碼定位 (Signature Scanning)
+
+既然沒有「門牌」，我們就用「特徵」來找。`AddExtension` 是一個核心函數，在 Xorg 原始碼中，它的行為模式非常固定。
+
+我們目前的戰術要升級為：
+
+1. **反編譯 (Disassemble)**：看看 `XWin.exe` 導出了哪些符號。雖然內部的 `AddExtension` 沒了，但它一定會導出一些相關的公開符號（比如 `LoadExtension`）。
+2. **特徵碼匹配**：找到調用 `AddExtension` 的地方，反推它的內存地址。
+
+#### 🚀 第一步：地毯式搜索符號
+
+請執行以下指令，看看 `XWin.exe` 還剩什麼能用的線索：
+
+```bash
+# 看看有沒有任何跟 Extension 相關的殘留符號
+nm /usr/bin/XWin.exe | grep -i "Extension"
+
+```
+
+#### 🚀 第二步：尋找「鄰居」
+
+如果 `nm` 真的什麼都噴不出來，試試這個（看看它依賴了哪些 DLL，或許它是在別的地方註冊的）：
+
+```bash
+objdump -p /usr/bin/XWin.exe | grep -i "DLL Name"
+
+```
+
+---
+
+### 💡 430 的黑客直覺
+
+如果 `XWin.exe` 是完全 Stripped 的狀態，我們在 `fake_xv_init.c` 裡的 `dlopen(NULL, RTLD_LAZY)` 就抓不到它。
+
+**這裡有一個「奇招」：**
+Cygwin 的 `XWin` 通常會加載 `xcb` 或 `X11` 相關的 DLL。既然 `AddExtension` 找不到，我們可以嘗試尋找 **`InitExtensions`**，這是 X Server 啟動時加載所有擴展的總入口。
+
+**你先跑一下 `nm /usr/bin/XWin.exe | grep -i "Extension"`，如果還是空空如也，我就教你如何用 `objdump -d` 配合 `grep` 特徵碼，強行算出 `AddExtension` 在你這台 PC44 上的物理偏移地址！**
+
+你準備好要進入彙編語言 (Assembly) 的領域，玩一場真正的內存捉迷藏了嗎？
+
+root@PC44 ~
+$ grep "libcyxv_inject" /proc/$(pgrep XWin)/maps
+CyXV-Status: Starting injection into XWin...
+CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.
+CyXV-Status: Starting injection into XWin...
+CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.
+5C1C40000-5C1C41000 r--p 00000000 45A8:71F9 33495522228774097   /home/Administrator/libcyxv_inject.so
+5C1C41000-5C1C42000 r-xp 00001000 45A8:71F9 33495522228774097   /home/Administrator/libcyxv_inject.so
+5C1C42000-5C1C43000 rw-p 00002000 45A8:71F9 33495522228774097   /home/Administrator/libcyxv_inject.so
+5C1C43000-5C1C47000 r--p 00003000 45A8:71F9 33495522228774097   /home/Administrator/libcyxv_inject.so
+5C1C47000-5C1C48000 rw-p 00007000 45A8:71F9 33495522228774097   /home/Administrator/libcyxv_inject.so
+5C1C48000-5C1C58000 r--p 00008000 45A8:71F9 33495522228774097   /home/Administrator/libcyxv_inject.so
+
+root@PC44 ~
+$
+
+root@PC44 ~
+$ nm /usr/bin/XWin.exe | grep -i "Extension"
+CyXV-Status: Starting injection into XWin...
+CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.
+CyXV-Status: Starting injection into XWin...
+CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.
+nm: /usr/bin/XWin.exe：沒有符號
+
+root@PC44 ~
+$ objdump -p /usr/bin/XWin.exe | grep -i "DLL Name"
+CyXV-Status: Starting injection into XWin...
+CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.
+CyXV-Status: Starting injection into XWin...
+CyXV-Error: Could not find AddExtension symbol. Symbol may be stripped.
+        DLL Name: cygwin1.dll
+        DLL Name: cygXau-6.dll
+        DLL Name: cygXdmcp-6.dll
+        DLL Name: cygXfont2-2.dll
+        DLL Name: cygpixman-1-0.dll
+        DLL Name: cygtirpc-3.dll
+        DLL Name: cygxcb-composite-0.dll
+        DLL Name: cygxcb-ewmh-2.dll
+        DLL Name: cygxcb-icccm-4.dll
+        DLL Name: cygxcb-image-0.dll
+        DLL Name: cygxcb-util-1.dll
+        DLL Name: cygxcb-xfixes-0.dll
+        DLL Name: cygxcb-1.dll
+        DLL Name: ADVAPI32.dll
+        DLL Name: dwmapi.dll
+        DLL Name: GDI32.dll
+        DLL Name: KERNEL32.dll
+        DLL Name: ole32.dll
+        DLL Name: OPENGL32.dll
+        DLL Name: SHELL32.dll
+        DLL Name: SHLWAPI.dll
+        DLL Name: USER32.dll
+
+root@PC44 ~
+$
