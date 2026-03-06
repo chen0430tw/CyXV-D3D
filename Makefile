@@ -14,9 +14,9 @@ LDFLAGS =
 
 # ── cyxv.dll ─────────────────────────────────────────────────────────────────
 
-CYXV_SRC = cyxv_init.c cyxv_dispatch.c cyxv_config.c
+CYXV_SRC = src/cyxv_init.c src/cyxv_dispatch.c src/cyxv_config.c
 CYXV_OBJ = $(CYXV_SRC:.c=.o)
-CYXV_HDR = cyxv_xvproto.h cyxv_dispatch.h cyxv_config.h
+CYXV_HDR = src/cyxv_xvproto.h src/cyxv_dispatch.h src/cyxv_config.h
 
 cyxv.dll: $(CYXV_OBJ)
 	$(CC) -shared -o $@ $^ \
@@ -32,12 +32,12 @@ cyxv.dll: $(CYXV_OBJ)
 	@echo "  xvcompat = true   # present as XVideo (default)"
 	@echo "  xvcompat = false  # present as CyXV-D3D"
 
-$(CYXV_OBJ): %.o: %.c $(CYXV_HDR)
-	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+src/%.o: src/%.c $(CYXV_HDR)
+	$(CC) $(CFLAGS) -fPIC -Isrc -c $< -o $@
 
 # ── phoenix_receiver ─────────────────────────────────────────────────────────
 
-RECV_SRC = phoenix_receiver.c
+RECV_SRC = phoenix/phoenix_receiver.c
 RECV_BIN = phoenix_receiver
 
 FFMPEG_CFLAGS  := $(shell pkg-config --cflags libavcodec libavutil libswscale 2>/dev/null \
