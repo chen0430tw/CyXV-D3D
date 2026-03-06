@@ -42,6 +42,7 @@
 #include <X11/Xlib.h>
 
 #ifdef __CYGWIN__
+# undef Status   /* X11/Xlib.h defines Status as int; conflicts with w32api struct members */
 # include <windows.h>
 #endif
 
