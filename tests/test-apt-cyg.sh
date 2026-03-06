@@ -31,6 +31,7 @@ mkdir -p "$ETCSETUP" "$ETCPOST" "$ETCPRE" "$CACHEDIR" \
          "$MIRRORROOT/x86_64/release/testpkg-b" \
          "$MIRRORROOT/x86_64/release/testpkg-c" \
          "$MIRRORROOT/x86_64/release/hollow-pkg" \
+         "$MIRRORROOT/x86_64/release/meta-pkg" \
          "$T/pkgtmp" "$T/bin"
 
 cleanup() {
@@ -97,6 +98,19 @@ make-hollow-pkg() {
   echo "$arc"
 }
 
+# Build a tiny but valid tar.xz that contains only a postinstall script —
+# no .dll/.exe — mimicking Cygwin meta-packages (e.g. python3, gcc).
+make-meta-pkg() {
+  local name=$1 ver=$2
+  local pkgdir="$T/pkgtmp/${name}-${ver}-meta"
+  rm -rf "$pkgdir"
+  mkdir -p "$pkgdir/etc/postinstall"
+  echo '#!/bin/sh' > "$pkgdir/etc/postinstall/${name}.sh"
+  local arc="$MIRRORROOT/x86_64/release/${name}/${name}-${ver}.tar.xz"
+  tar -C "$pkgdir" -cJf "$arc" etc/
+  echo "$arc"
+}
+
 sha512of() { sha512sum "$1" | awk '{print $1}'; }
 
 # ── Build test fixtures ─────────────────────────────────────────────────────
@@ -104,11 +118,13 @@ ARC_B=$(make-pkg  "testpkg-b" "2.0-1")
 ARC_A=$(make-pkg  "testpkg-a" "1.0-1")
 ARC_C=$(make-pkg  "testpkg-c" "1.0-1")          # depends on virtual name provided by testpkg-b
 ARC_H=$(make-hollow-pkg "hollow-pkg" "1.0-1")
+ARC_M=$(make-meta-pkg   "meta-pkg"   "1.0-1")   # tiny valid tar, no binaries — meta-package
 ARC_A2=$(make-pkg "testpkg-a" "1.1-1")          # upgrade target (already in mirror dir)
 
 SIZE_A=$(stat -c%s "$ARC_A");   HASH_A=$(sha512of "$ARC_A")
 SIZE_B=$(stat -c%s "$ARC_B");   HASH_B=$(sha512of "$ARC_B")
 SIZE_C=$(stat -c%s "$ARC_C");   HASH_C=$(sha512of "$ARC_C")
+SIZE_M=$(stat -c%s "$ARC_M");   HASH_M=$(sha512of "$ARC_M")
 SIZE_H=$(stat -c%s "$ARC_H");   HASH_H=$(sha512of "$ARC_H")
 SIZE_A2=$(stat -c%s "$ARC_A2"); HASH_A2=$(sha512of "$ARC_A2")
 
@@ -149,6 +165,12 @@ sdesc: "Hollow stub package for detection testing"
 category: Test
 version: 1.0-1
 install: x86_64/release/hollow-pkg/hollow-pkg-1.0-1.tar.xz ${SIZE_H} ${HASH_H}
+
+@ meta-pkg
+sdesc: "Tiny meta-package with only a postinstall script (no binaries)"
+category: Test
+version: 1.0-1
+install: x86_64/release/meta-pkg/meta-pkg-1.0-1.tar.xz ${SIZE_M} ${HASH_M}
 EOF
   # apt-cyg fetches "setup.bz2" (not "setup.ini.bz2") — use -c to stdout
   bzip2 -c "$MIRRORROOT/x86_64/setup.ini" > "$MIRRORROOT/x86_64/setup.bz2"
@@ -283,6 +305,13 @@ check "size reported correctly"        "108 bytes"        install hollow-pkg
 check "install is aborted"             "Aborting"         install hollow-pkg
 check_absent "stub NOT added to installed.db" "hollow-pkg" list hollow-pkg
 check "--allow-hollow bypasses abort"  "proceeding"  install --allow-hollow hollow-pkg
+echo
+
+# ── 6b. meta-package (tiny valid tar, no binaries) must not be flagged ───────
+echo "── 6b. meta-package detection ──"
+check "meta-package installs without HOLLOW warning"  "Installing meta-pkg"  install meta-pkg
+check_absent "meta-package: no HOLLOW alarm raised"  "HOLLOW PACKAGE"  install meta-pkg
+check "meta-package recorded in installed.db"  "meta-pkg"  list meta-pkg
 echo
 
 # ── 7. hash verification visibility ─────────────────────────────────────────
