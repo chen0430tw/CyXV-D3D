@@ -668,8 +668,14 @@ function download {
   if ! test -e "$bn" || \
      [[ "$($hash "$bn" 2>/dev/null | awk '{print $1}')" != "$digest" ]]
   then
-    echo "Downloading $bn ..."
-    wget -O "$bn" "$mirror/$dn/$bn"
+    local size_h
+    size_h=$(awk -v b="$3" 'BEGIN {
+      if (b+0 >= 1048576) printf "%.1f MB", b/1048576
+      else if (b+0 >= 1024) printf "%d kB", int(b/1024)
+      else printf "%d B", b+0
+    }')
+    printf 'Get: %s/%s/%s [%s]\n' "$mirror" "$dn" "$bn" "$size_h"
+    wget -q --show-progress -O "$bn" "$mirror/$dn/$bn"
   fi
 
   # Always display an explicit verification line so the operator can confirm
@@ -723,21 +729,40 @@ function _do-install {
   echo Unpacking...
 
   cd "$cache/$mirrordir/$dn"
-  tar -x -C / -f "$bn"
+
+  # Capture the file manifest before extraction so we can roll back any
+  # partially-written files if tar is interrupted or a post-extract check fails.
+  local _manifest
+  _manifest=$(mktemp /tmp/apt-cyg-extract.XXXXXX)
+  tar -t -f "$bn" | grep -v '/$' > "$_manifest"
+
+  _rollback-extract() {
+    warn "Rolling back extracted files for $pkg ..."
+    while IFS= read -r f; do rm -f "/$f" 2>/dev/null; done < "$_manifest"
+    rm -f "$_manifest"
+  }
+
+  if ! tar -x -C / -f "$bn"; then
+    _rollback-extract
+    exit 1
+  fi
 
   # ── PE-header check (Layer 3, post-extraction) ──────────────────────────
   # Verify that every installed DLL/EXE carries a valid Windows PE magic.
   # Stubs sometimes ship a text or zero-byte file under a .dll name; those
   # pass extraction silently but crash immediately on load.
-  # NOTE: this check runs BEFORE installed.db is updated, so on failure we
-  # simply abort — there is nothing to roll back in the database yet.
+  # NOTE: this check runs BEFORE installed.db is updated; on failure we
+  # roll back the extracted files so the target stays in a clean state.
   _check-pe-bins "$pkg" || {
     if [ ! -v allow_hollow ]; then
       warn "Installation of $pkg aborted: ghost binaries detected."
-      warn "Extracted files remain on disk; installed.db was NOT updated."
+      _rollback-extract
       exit 1
     fi
   }
+
+  rm -f "$_manifest"
+  unset -f _rollback-extract
 
   # Insert (or replace) the package record in installed.db in sorted order.
   # Third column: 1 = explicitly installed by user, 0 = auto-dependency.
