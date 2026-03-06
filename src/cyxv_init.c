@@ -34,7 +34,7 @@
  *   How to find rva_init_extensions for your XWin build:
  *     1. Start XWin once with cyxv.dll; the log prints image_base.
  *     2. gdb -p $(pgrep XWin) -ex "p InitExtensions" -batch
- *          → $1 = {void (void)} 0x10041fab0 <InitExtensions>
+ *          → $1 = {void (int, char **)} 0x10041fab0 <InitExtensions>
  *     3. RVA = VA - image_base  (e.g. 0x10041fab0 - 0x100400000 = 0x1fab0)
  *     4. echo "rva_init_extensions = 1fab0" >> ~/.config/cyxv.conf
  *
@@ -86,13 +86,29 @@ static CyxvConfig g_cfg;
 #define RVA_ShmSegType                0ULL
 
 /* ── Xorg ExtensionEntry (fields we need) ────────────────────────────── */
-
+/*
+ * Upstream layout (include/extnsionst.h):
+ *   int   index;                          offset  0
+ *   void (*CloseDown)(ExtensionEntry *);  offset  8 on 64-bit / 4 on 32-bit
+ *   const char *name;                     offset 16 on 64-bit / 8 on 32-bit
+ *   int   base;                           offset 24 on 64-bit / 12 on 32-bit
+ *   int   eventBase;
+ *   int   eventLast;
+ *   int   errorBase;
+ *   int   errorLast;
+ *   ...
+ * CloseDown must be present between index and name or all field offsets
+ * past index will be wrong.  base/eventBase/errorBase are int, not short.
+ */
 typedef struct {
     int   index;
-    char *name;
-    short base;       /* assigned major opcode */
-    short eventBase;
-    short errorBase;
+    void  (*CloseDown)(void *);   /* fn ptr: 8 bytes on 64-bit, 4 on 32-bit */
+    const char *name;
+    int   base;       /* assigned major opcode */
+    int   eventBase;
+    int   eventLast;
+    int   errorBase;
+    int   errorLast;
 } ExtensionEntry;
 
 /* ── Function-pointer types ──────────────────────────────────────────── */
@@ -109,15 +125,35 @@ typedef ExtensionEntry * (*AddExtensionFn)(
 
 typedef void (*WriteToClientFn)(void *client, int len, const void *data);
 
-/* ── /proc/self/maps: XWin.exe image base ────────────────────────────── */
+/* ── Main executable image base from /proc/self/maps ─────────────────
+ * Reads /proc/self/exe to get the executable path, then finds its first
+ * mapping in /proc/self/maps.  Works for both XWin.exe (Cygwin) and
+ * the xwin_stub test binary (Linux).
+ */
 
 static uintptr_t xwin_image_base(void) {
+    /* Resolve the actual executable path */
+    char exepath[512] = {0};
+    ssize_t n = readlink("/proc/self/exe", exepath, sizeof(exepath) - 1);
+    if (n <= 0) return 0;
+    exepath[n] = '\0';
+
+    /* Strip directory to get basename */
+    const char *base_name = strrchr(exepath, '/');
+    base_name = base_name ? base_name + 1 : exepath;
+
     FILE *f = fopen("/proc/self/maps", "r");
     if (!f) return 0;
     char line[512];
     uintptr_t base = 0;
     while (fgets(line, sizeof(line), f)) {
-        if (strstr(line, "XWin") && strchr(line, 'r')) {
+        /* Match by basename (case-insensitive for "XWin" vs "xwin_stub") */
+        char *slash = strrchr(line, '/');
+        const char *entry_name = slash ? slash + 1 : line;
+        /* Check that the mapped file starts with the same name as the exe */
+        size_t blen = strlen(base_name);
+        if (strncasecmp(entry_name, base_name, blen) == 0 &&
+            strchr(line, 'r')) {
             base = (uintptr_t)strtoull(line, NULL, 16);
             break;
         }
@@ -263,7 +299,7 @@ static void do_init(void) {
     if (entry) {
         CYXV_LOG("[CyXV] \"%s\" registered: opcode=%d entry=%p\n"
                  "[CyXV] Verify: DISPLAY=:0 xdpyinfo | grep %s\n",
-                 extname, (int)(unsigned short)entry->base, (void *)entry,
+                 extname, entry->base, (void *)entry,
                  g_cfg.xvcompat ? "XVideo" : "CyXV-D3D");
     } else {
         CYXV_LOG("[CyXV] AddExtension returned NULL\n"
@@ -287,14 +323,18 @@ static void *init_thread(void *arg) {
  *
  * Called by XWin instead of its own InitExtensions().  At this point the
  * Loader Lock has been released, so pthread_create() is safe.
+ *
+ * Signature must match the real InitExtensions(int argc, char *argv[]) so
+ * that argc/argv are correctly received and forwarded on the x86-64 SysV ABI
+ * (rdi=argc, rsi=argv).  A (void) prototype would silently pass garbage.
  */
-static void init_extensions_hook(void) {
+static void init_extensions_hook(int argc, char *argv[]) {
     /* Restore original bytes so the real InitExtensions can execute */
     uintptr_t orig_site = g_hook_site;
     remove_hook();  /* clears g_hook_site */
 
-    /* Call the real InitExtensions */
-    ((void (*)(void))orig_site)();
+    /* Call the real InitExtensions, forwarding the original arguments */
+    ((void (*)(int, char **))orig_site)(argc, argv);
 
     /* All built-in extensions are now registered; AddExtension is safe.
      * Spawn our init thread — no sleep() needed this time.             */

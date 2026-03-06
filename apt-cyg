@@ -1,0 +1,1151 @@
+#!/bin/bash
+# apt-cyg: install tool for Cygwin similar to debian apt-get
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2013 Trans-code Design
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+if [ ${BASH_VERSINFO}${BASH_VERSINFO[1]} -lt 42 ]
+then
+  echo 'Bash version 4.2+ required'
+  exit
+fi
+
+usage="\
+NAME
+  apt-cyg - package manager utility
+
+SYNOPSIS
+  apt-cyg [operation] [options] [targets]
+
+DESCRIPTION
+  apt-cyg is a package management utility that tracks installed packages on a
+  Cygwin system. Invoking apt-cyg involves specifying an operation with any
+  potential options and targets to operate on. A target is usually a package
+  name, file name, URL, or a search string. Targets can be provided as command
+  line arguments.
+
+OPERATIONS
+  install
+    Install package(s).
+
+  reinstall
+    Reinstall package(s) even if already installed, re-extracting all files.
+
+  remove
+    Remove package(s) from the system.
+
+  upgrade
+    Upgrade named package(s) to the current version in setup.ini. If no
+    packages are specified, upgrade all installed packages.
+
+  check
+    Inspect installed package(s) for hollow/stub installs.  Three checks are
+    performed: (1) cached archive size and content, (2) PE-header validity of
+    every installed DLL/EXE, (3) presence of every recorded file on disk.
+    Useful after installing from an archive mirror that may contain stubs.
+
+  update
+    Download a fresh copy of the master package list (setup.ini) from the
+    server defined in setup.rc.
+
+  download
+    Retrieve package(s) from the server, but do not install/upgrade anything.
+
+  show
+    Display information on given package(s).
+
+  depends
+    Produce a dependency tree for a package.
+
+  rdepends
+    Produce a tree of packages that depend on the named package.
+
+  list
+    Search each locally-installed package for names that match regexp. If no
+    package names are provided in the command line, all installed packages will
+    be queried.
+
+  listall
+    This will search each package in the master package list (setup.ini) for
+    names that match regexp.
+
+  category
+    Display all packages that are members of a named category.
+
+  listfiles
+    List all files owned by a given package. Multiple packages can be specified
+    on the command line.
+
+  search
+    Search for downloaded packages that own the specified file(s). The path can
+    be relative or absolute, and one or more files can be specified.
+
+  searchall
+    Search cygwin.com to retrieve file information about packages. The provided
+    target is considered to be a filename and searchall will return the
+    package(s) which contain this file.
+
+  mirror
+    Set the mirror; a full URL to a location where the database, packages, and
+    signatures for this repository can be found. If no URL is provided, display
+    current mirror.
+
+  cache
+    Set the package cache directory. If a file is not found in cache directory,
+    it will be downloaded. Unix and Windows forms are accepted, as well as
+    absolute or regular paths. If no directory is provided, display current
+    cache.
+
+OPTIONS
+  --nodeps
+    Specify this option to skip all dependency checks.
+
+  --noscripts
+    Do not run postinstall scripts.
+
+  --allow-hollow
+    Suppress the hollow-package abort and proceed with installation even when
+    an archive is identified as a stub.  The PE-header check after extraction
+    is also downgraded from an error to a warning.  Use with caution: you will
+    most likely end up with a non-functional install.
+
+  --version
+    Display version and exit.
+"
+
+version="\
+apt-cyg version 2
+
+The MIT License (MIT)
+
+Copyright (c) 2005-9 Stephen Jungels
+"
+
+# Global guard: tracks packages currently being processed to break
+# circular dependency chains (e.g. A requires B requires A).
+declare -A _installing
+
+# Minimum archive size in bytes below which a package is unconditionally
+# flagged as a hollow stub.  The canonical example from the 2022 Archive
+# is libopenssl100 at 108 bytes — it passes SHA-512 verification because
+# setup.ini records the hash of the stub itself.
+readonly HOLLOW_MIN_BYTES=1024
+
+# Archives below this size receive extra content-validation.
+readonly HOLLOW_WARN_BYTES=65536
+
+function wget {
+  if command wget -h &>/dev/null
+  then
+    command wget "$@"
+  else
+    warn wget is not installed, using lynx as fallback
+    set "${*: -1}"
+    lynx -source "$1" > "${1##*/}"
+  fi
+}
+
+function find-workspace {
+  # Work wherever setup.exe worked last, if possible.
+  # Use the same block-based awk parser for both last-cache and last-mirror
+  # so that setup.rc format changes affect both consistently.
+  cache=$(awk '
+  BEGIN {
+    RS = "\n\\<"
+    FS = "\n\t"
+  }
+  $1 == "last-cache" {
+    print $2
+  }
+  ' /etc/setup/setup.rc)
+
+  mirror=$(awk '
+  BEGIN {
+    RS = "\n\\<"
+    FS = "\n\t"
+  }
+  $1 == "last-mirror" {
+    print $2
+  }
+  ' /etc/setup/setup.rc)
+
+  mirrordir=$(sed '
+  s / %2f g
+  s : %3a g
+  ' <<< "$mirror")
+
+  mkdir -p "$cache/$mirrordir/$arch"
+  cd "$cache/$mirrordir/$arch"
+  if [ -e setup.ini ]
+  then
+    return 0
+  else
+    get-setup
+    return 1
+  fi
+}
+
+function get-setup {
+  touch setup.ini
+  mv setup.ini setup.ini-save
+  # Try xz format first (current Cygwin mirrors), fall back to bz2 (legacy).
+  wget -N "$mirror/$arch/setup.xz" 2>/dev/null
+  if [ -e setup.xz ]
+  then
+    xz -d setup.xz
+    mv setup setup.ini
+    echo Updated setup.ini
+  else
+    wget -N "$mirror/$arch/setup.bz2" 2>/dev/null
+    if [ -e setup.bz2 ]
+    then
+      bunzip2 setup.bz2
+      mv setup setup.ini
+      echo Updated setup.ini
+    else
+      echo Error updating setup.ini, reverting
+      mv setup.ini-save setup.ini
+    fi
+  fi
+}
+
+function check-packages {
+  if [[ ${#pks[@]} -gt 0 ]]
+  then
+    return 0
+  else
+    echo No packages found.
+    return 1
+  fi
+}
+
+function warn {
+  printf '\e[1;31m%s\e[m\n' "$*" >&2
+}
+
+# Compute the hash of <file> using <hashcmd>, compare against <expected>, and
+# print a one-line result in the style of Linux package managers:
+#
+#   Verifying sha512sum  bash-5.2.15-1.tar.xz ... OK
+#
+# Returns 0 on match, 1 on mismatch (also prints expected vs. actual values).
+function verify-hash {
+  local hashcmd=$1 expected=$2 file=$3 actual
+  printf 'Verifying %-10s %s ... ' "$hashcmd" "$(basename "$file")"
+  actual=$($hashcmd "$file" 2>/dev/null | awk '{print $1}')
+  if [[ "$actual" == "$expected" ]]; then
+    echo 'OK'
+    return 0
+  else
+    printf '\e[1;31mFAILED\e[m\n' >&2
+    warn "  Expected : $expected"
+    warn "  Got      : ${actual:-<could not compute hash>}"
+    return 1
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Hollow-package / stub detection
+# ---------------------------------------------------------------------------
+#
+# Background: Cygwin archive mirrors (especially the 2022 snapshot) contain
+# packages whose .tar.xz/.tar.bz2 file is a valid, hash-matching archive that
+# nevertheless carries no usable payload — a "stub" or "hollow" package.
+# Because apt-cyg verifies only the hash (which matches the stub), these
+# packages install silently and leave the system in a broken state.
+#
+# Two complementary checks address this:
+#
+#   check-hollow  <pkg> <archive-path>
+#     Run BEFORE extraction.  Tests archive byte-size and non-directory
+#     file count.  Should be called from download().
+#
+#   _check-pe-bins  <pkg>
+#     Run AFTER extraction.  Reads /etc/setup/<pkg>.lst.gz and verifies that
+#     every installed .dll/.exe starts with the Windows PE magic bytes (MZ,
+#     0x4D 0x5A).  A file of the right name but wrong content — a "ghost
+#     binary" — will compile fine into installed.db but crash at load time.
+# ---------------------------------------------------------------------------
+
+# Check a downloaded archive for hollow/stub characteristics.
+# Returns 0 (archive looks real) or 1 (hollow — do not install).
+# When ALLOW_HOLLOW is set the function emits a warning but returns 0.
+function check-hollow {
+  local pkg=$1 archive=$2
+  local size real_files
+
+  # ── Layer 1: size gate ──────────────────────────────────────────────────
+  size=$(stat -c%s "$archive" 2>/dev/null || echo 0)
+
+  if (( size < HOLLOW_MIN_BYTES )); then
+    warn "*** HOLLOW PACKAGE: $pkg ***"
+    warn "    Archive : $(basename "$archive")"
+    warn "    Size    : ${size} bytes (threshold: ${HOLLOW_MIN_BYTES})"
+    warn "    The archive passed hash verification because setup.ini records"
+    warn "    the hash of the stub itself — but there is no usable payload."
+    warn "    You must compile the real library from source, e.g.:"
+    warn "      apt-cyg install perl_base gcc-core make zlib-devel"
+    warn "      # fetch the *-src tarball, extract it, then:"
+    warn "      ./Configure Cygwin shared && make"
+    warn "      cp cyg*.dll /usr/bin/"
+    if [ -v allow_hollow ]; then
+      warn "    (--allow-hollow set; proceeding anyway)"
+      return 0
+    fi
+    return 1
+  fi
+
+  if (( size < HOLLOW_WARN_BYTES )); then
+    warn "WARNING: $pkg archive is only ${size} bytes — verifying contents..."
+  fi
+
+  # ── Layer 2: content gate ───────────────────────────────────────────────
+  # Count entries that are NOT bare directories.  A valid package must ship
+  # at least one real file.
+  real_files=$(tar tf "$archive" 2>/dev/null \
+    | grep -v '/$' | grep -cEv '^\./?$' || true)
+
+  if (( real_files == 0 )); then
+    warn "*** HOLLOW PACKAGE: $pkg — archive contains only empty directories ***"
+    warn "    Archive : $(basename "$archive")"
+    warn "    This is a stub. Obtain the real binary or compile from source."
+    if [ -v allow_hollow ]; then
+      warn "    (--allow-hollow set; proceeding anyway)"
+      return 0
+    fi
+    return 1
+  fi
+
+  return 0
+}
+
+# Verify PE magic bytes (MZ header) on every .dll / .exe installed by <pkg>.
+# Uses od(1), which is always present on Cygwin.
+# Returns 0 (all OK) or 1 (one or more ghost binaries found).
+function _check-pe-bins {
+  local pkg=$1 bad=0 path magic entry
+
+  [[ -f /etc/setup/"$pkg".lst.gz ]] || return 0
+
+  while IFS= read -r entry; do
+    path="/${entry%$'\r'}"
+    [[ -f $path ]] || continue
+    # Read the first two bytes; a valid PE file begins with 0x4D 0x5A ("MZ").
+    magic=$(od -An -tx1 -N2 "$path" 2>/dev/null | tr -d ' \n')
+    if [[ ${magic,,} != "4d5a" ]]; then
+      warn "  GHOST BINARY: $path"
+      warn "    Expected MZ/PE header, got: '${magic:-<unreadable>}'"
+      warn "    This file is a stub — it will fail to load at runtime."
+      (( bad++ ))
+    fi
+  done < <(gzip -cd /etc/setup/"$pkg".lst.gz 2>/dev/null \
+    | grep -iE '\.(dll|exe)$')
+
+  if (( bad > 0 )); then
+    warn "Package $pkg: $bad binary file(s) failed PE-header validation."
+    warn "  hollow install detected — binaries are non-functional stubs."
+    warn "  Re-run: apt-cyg reinstall $pkg  (after obtaining real binaries)"
+    warn "  or compile from source and copy the DLLs into /usr/bin/ manually."
+    if [ -v allow_hollow ]; then
+      warn "  (--allow-hollow set; recorded as installed anyway)"
+      return 0
+    fi
+    return 1
+  fi
+
+  return 0
+}
+
+# Extract the dependency list from a desc file.
+#
+# Modern setup.ini uses   depends2: (or depends:)
+#   - comma-separated, may carry version constraints like " (>= 1.0)"
+# Legacy setup.ini uses  requires:
+#   - space-separated, no version constraints
+#
+# Both are normalised to a plain space-separated list of package names.
+function get-requires {
+  local descfile=$1
+  awk '
+  /^(depends2|depends):/ {
+    sub(/^(depends2|depends):[[:space:]]*/, "")
+    gsub(/ \([^)]*\)/, "")   # strip " (>= 1.0)" style constraints
+    gsub(/,[[:space:]]*/, " ") # commas -> spaces
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+    print
+    found = 1
+    exit
+  }
+  /^requires:/ {
+    if (!found) {
+      sub(/^requires:[[:space:]]*/, "")
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+      print
+      exit
+    }
+  }
+  ' "$descfile"
+}
+
+# Run all pending postinstall scripts (.sh and .dash).
+function run-postinstall {
+  find /etc/postinstall \( -name '*.sh' -o -name '*.dash' \) | sort | \
+  while read script
+  do
+    echo Running $script
+    case $script in
+      *.dash) dash "$script" ;;
+      *)      "$script"      ;;
+    esac
+    mv "$script" "$script.done"
+  done
+}
+
+function apt-update {
+  if find-workspace
+  then
+    get-setup
+  fi
+}
+
+function apt-category {
+  check-packages
+  find-workspace
+  for pkg in "${pks[@]}"
+  do
+    awk '
+    $1 == "@" {
+      pck = $2
+    }
+    $1 == "category:" && $0 ~ query {
+      print pck
+    }
+    ' query="$pkg" setup.ini
+  done
+}
+
+function apt-list {
+  local sbq
+  for pkg in "${pks[@]}"
+  do
+    let sbq++ && echo
+    awk 'NR>1 && $1~pkg { printf "%-30s %s\n", $1, $2 }' \
+      pkg="$pkg" /etc/setup/installed.db
+  done
+  let sbq && return
+  awk 'NR>1 { printf "%-30s %s\n", $1, $2 }' /etc/setup/installed.db
+}
+
+function apt-listall {
+  check-packages
+  find-workspace
+  local sbq
+  for pkg in "${pks[@]}"
+  do
+    let sbq++ && echo
+    # Match on package name OR short description (case-insensitive on sdesc).
+    awk '
+    {
+      name = $1
+      matched = (name ~ pkg)
+      if (!matched) {
+        for (i = 2; i <= NF; i++) {
+          if ($i ~ /^sdesc:/ && tolower($i) ~ tolower(pkg)) {
+            matched = 1
+            break
+          }
+        }
+      }
+      if (matched) {
+        printf "%-30s", name
+        for (i = 2; i <= NF; i++) {
+          if ($i ~ /^sdesc:/) {
+            desc = $i
+            gsub(/^sdesc:[[:space:]]*"|"[[:space:]]*$/, "", desc)
+            printf "  %s", desc
+            break
+          }
+        }
+        print ""
+      }
+    }
+    ' RS='\n\n@ ' FS='\n' pkg="$pkg" setup.ini
+  done
+}
+
+function apt-listfiles {
+  check-packages
+  find-workspace
+  local pkg sbq
+  for pkg in "${pks[@]}"
+  do
+    (( sbq++ )) && echo
+    if [ ! -e /etc/setup/"$pkg".lst.gz ]
+    then
+      download "$pkg"
+    fi
+    gzip -cd /etc/setup/"$pkg".lst.gz
+  done
+}
+
+function apt-show {
+  find-workspace
+  check-packages
+  for pkg in "${pks[@]}"
+  do
+    (( notfirst++ )) && echo
+    # Exact match first; if not found, fall back to regex and list candidates.
+    awk '
+    $1 == query {
+      print
+      exact++
+    }
+    $1 != query && $1 ~ query {
+      fuzzy[++fn] = $1
+    }
+    END {
+      if (exact) exit
+      if (fn) {
+        print "No exact match for \"" query "\". Similar packages:"
+        for (i = 1; i <= fn; i++) print "  " fuzzy[i]
+      } else {
+        print "Unable to locate package \"" query "\""
+      }
+    }
+    ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+  done
+}
+
+function apt-depends {
+  find-workspace
+  check-packages
+  for pkg in "${pks[@]}"
+  do
+    awk '
+    @include "join"
+    $1 == "@" {
+      apg = $2
+    }
+    $1 == "depends2:" || $1 == "depends:" || $1 == "requires:" {
+      line = $0
+      sub(/^(depends2|depends|requires):[[:space:]]*/, "", line)
+      gsub(/ \([^)]*\)/, "", line)
+      gsub(/,[[:space:]]*/, " ", line)
+      n = split(line, parts)
+      delete reqs[apg]
+      for (i = 1; i <= n; i++)
+        if (parts[i] != "") reqs[apg][i] = parts[i]
+    }
+    END {
+      prpg(ENVIRON["pkg"])
+    }
+    function smartmatch(small, large,    values) {
+      for (each in large)
+        values[large[each]]
+      return small in values
+    }
+    function prpg(fpg) {
+      if (smartmatch(fpg, spath)) return
+      spath[length(spath)+1] = fpg
+      print join(spath, 1, length(spath), " > ")
+      if (isarray(reqs[fpg]))
+        for (each in reqs[fpg])
+          prpg(reqs[fpg][each])
+      delete spath[length(spath)]
+    }
+    ' setup.ini
+  done
+}
+
+function apt-rdepends {
+  find-workspace
+  for pkg in "${pks[@]}"
+  do
+    awk '
+    @include "join"
+    $1 == "@" {
+      apg = $2
+    }
+    $1 == "depends2:" || $1 == "depends:" || $1 == "requires:" {
+      line = $0
+      sub(/^(depends2|depends|requires):[[:space:]]*/, "", line)
+      gsub(/ \([^)]*\)/, "", line)
+      gsub(/,[[:space:]]*/, " ", line)
+      n = split(line, parts)
+      for (i = 1; i <= n; i++)
+        if (parts[i] != "")
+          reqs[parts[i]][length(reqs[parts[i]])+1] = apg
+    }
+    END {
+      prpg(ENVIRON["pkg"])
+    }
+    function smartmatch(small, large,    values) {
+      for (each in large)
+        values[large[each]]
+      return small in values
+    }
+    function prpg(fpg) {
+      if (smartmatch(fpg, spath)) return
+      spath[length(spath)+1] = fpg
+      print join(spath, 1, length(spath), " < ")
+      if (isarray(reqs[fpg]))
+        for (each in reqs[fpg])
+          prpg(reqs[fpg][each])
+      delete spath[length(spath)]
+    }
+    ' setup.ini
+  done
+}
+
+function apt-download {
+  check-packages
+  find-workspace
+  local pkg sbq
+  for pkg in "${pks[@]}"
+  do
+    (( sbq++ )) && echo
+    download "$pkg"
+  done
+}
+
+function download {
+  local pkg digest
+  pkg=$1
+
+  # Look up package block from setup.ini and save it as desc
+  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
+  if [ ! -s desc ]
+  then
+    echo Unable to locate package $pkg
+    exit 1
+  fi
+
+  # Pick the current (first) version entry
+  set -- $(awk '$1 == "install:"' desc)
+  if (( ! $# ))
+  then
+    echo 'Could not find "install" in package description: obsolete package?'
+    exit 1
+  fi
+
+  dn=$(dirname $2)
+  bn=$(basename $2)
+
+  # Detect hash algorithm from digest length:
+  #   32  chars  -> MD5
+  #   128 chars  -> SHA-512 hex
+  digest=$4
+  case ${#digest} in
+   32) hash=md5sum    ;;
+  128) hash=sha512sum ;;
+    *) hash=sha512sum ;;  # fallback for unknown/base64 variants
+  esac
+
+  mkdir -p "$cache/$mirrordir/$dn"
+  cd "$cache/$mirrordir/$dn"
+
+  # Download only if the file is absent or its cached copy fails verification.
+  # The silent pre-check avoids a redundant download on cache hits.
+  if ! test -e "$bn" || \
+     [[ "$($hash "$bn" 2>/dev/null | awk '{print $1}')" != "$digest" ]]
+  then
+    echo "Downloading $bn ..."
+    wget -O "$bn" "$mirror/$dn/$bn"
+  fi
+
+  # Always display an explicit verification line so the operator can confirm
+  # the integrity check ran and passed.  Abort on mismatch.
+  verify-hash "$hash" "$digest" "$bn" || exit
+
+  # ── Hollow-package check (Layer 1 + 2, pre-extraction) ─────────────────
+  # Hash verification above only confirms the downloaded bytes match the hash
+  # recorded in setup.ini — it cannot detect stubs whose hash was correctly
+  # published alongside the stub itself.
+  if ! check-hollow "$pkg" "$bn"
+  then
+    warn "Aborting installation of $pkg."
+    warn "Use --allow-hollow to override and install the stub anyway."
+    exit 1
+  fi
+
+  tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
+  cd ~-
+  mv desc "$cache/$mirrordir/$dn"
+  echo $dn $bn > /tmp/dwn
+}
+
+# Core install worker shared by apt-install, apt-reinstall, and apt-upgrade.
+#
+# Usage: _do-install <pkgname> <explicit> [--force]
+#   explicit : 1 = user-requested (written to installed.db as "1")
+#              0 = pulled in as a dependency (written as "0")
+#   --force  : reinstall even if already present in installed.db
+function _do-install {
+  local pkg=$1 explicit=${2:-1} force=${3:-}
+  local dn bn requires package wr
+
+  # Break circular dependency chains before they recurse infinitely.
+  if [[ ${_installing[$pkg]+_} ]]; then
+    echo "  (skipping $pkg — already queued, circular dependency?)"
+    return 0
+  fi
+
+  if [[ -z $force ]] && grep -q "^$pkg " /etc/setup/installed.db
+  then
+    echo "Package $pkg is already installed, skipping"
+    return 0
+  fi
+
+  _installing[$pkg]=1
+  echo "Installing $pkg"
+
+  download "$pkg"
+  read dn bn </tmp/dwn
+  echo Unpacking...
+
+  cd "$cache/$mirrordir/$dn"
+  tar -x -C / -f "$bn"
+
+  # ── PE-header check (Layer 3, post-extraction) ──────────────────────────
+  # Verify that every installed DLL/EXE carries a valid Windows PE magic.
+  # Stubs sometimes ship a text or zero-byte file under a .dll name; those
+  # pass extraction silently but crash immediately on load.
+  # NOTE: this check runs BEFORE installed.db is updated, so on failure we
+  # simply abort — there is nothing to roll back in the database yet.
+  _check-pe-bins "$pkg" || {
+    if [ ! -v allow_hollow ]; then
+      warn "Installation of $pkg aborted: ghost binaries detected."
+      warn "Extracted files remain on disk; installed.db was NOT updated."
+      exit 1
+    fi
+  }
+
+  # Insert (or replace) the package record in installed.db in sorted order.
+  # Third column: 1 = explicitly installed by user, 0 = auto-dependency.
+  awk '
+  ins != 1 && pkg < $1 {
+    print pkg, bz, explicit
+    ins = 1
+  }
+  $1 != pkg { print }
+  END {
+    if (ins != 1) print pkg, bz, explicit
+  }
+  ' pkg="$pkg" bz="$bn" explicit="$explicit" /etc/setup/installed.db > /tmp/awk.$$
+  mv /etc/setup/installed.db /etc/setup/installed.db-save
+  mv /tmp/awk.$$ /etc/setup/installed.db
+
+  if [ -v nodeps ]; then
+    unset '_installing[$pkg]'
+    return 0
+  fi
+
+  # Recursively install dependencies.
+  # get-requires handles both modern depends2:/depends: and legacy requires:.
+  requires=$(get-requires "$cache/$mirrordir/$dn/desc")
+  cd ~-
+
+  wr=0
+  if [[ $requires ]]; then
+    echo "Package $pkg requires: $requires"
+    for package in $requires
+    do
+      [[ -z $package ]] && continue
+      if grep -q "^$package " /etc/setup/installed.db
+      then
+        echo "  $package already installed"
+        continue
+      fi
+      _do-install "$package" 0 || (( wr++ ))
+    done
+  fi
+
+  (( wr )) && echo "Some required packages did not install, continuing"
+
+  unset '_installing[$pkg]'
+  return 0
+}
+
+function apt-install {
+  check-packages
+  find-workspace
+  local pkg
+  for pkg in "${pks[@]}"
+  do
+    _do-install "$pkg" 1
+  done
+  [ -v noscripts ] && return
+  run-postinstall
+}
+
+function apt-reinstall {
+  check-packages
+  find-workspace
+  local pkg
+  for pkg in "${pks[@]}"
+  do
+    _do-install "$pkg" 1 --force
+  done
+  [ -v noscripts ] && return
+  run-postinstall
+}
+
+function apt-upgrade {
+  find-workspace
+  # No targets = upgrade everything currently installed.
+  if [[ -z ${pks[*]} ]]; then
+    mapfile -t pks < <(awk 'NR>1 { print $1 }' /etc/setup/installed.db)
+  fi
+  local pkg current_bn available_bn tmpd
+  tmpd=$(mktemp -d)
+  for pkg in "${pks[@]}"
+  do
+    if ! grep -q "^$pkg " /etc/setup/installed.db
+    then
+      echo "Package $pkg is not installed; use 'install' instead"
+      continue
+    fi
+
+    current_bn=$(awk -v p="$pkg" 'NR>1 && $1==p { print $2; exit }' \
+      /etc/setup/installed.db)
+
+    awk '$1 == pc' RS='\n\n@ ' FS='\n' pc="$pkg" setup.ini > "$tmpd/desc"
+    if [ ! -s "$tmpd/desc" ]; then
+      warn "Package $pkg not found in setup.ini, skipping"
+      continue
+    fi
+
+    available_bn=$(awk '$1 == "install:" { print $2; exit }' "$tmpd/desc" \
+      | sed 's|.*/||')
+
+    if [[ "$current_bn" == "$available_bn" ]]; then
+      echo "Package $pkg is up to date ($current_bn)"
+    else
+      echo "Upgrading $pkg: $current_bn -> $available_bn"
+      _do-install "$pkg" 1 --force
+    fi
+  done
+  rm -rf "$tmpd"
+  [ -v noscripts ] && return
+  run-postinstall
+}
+
+function apt-check {
+  check-packages
+  find-workspace
+  local pkg errors=0
+
+  for pkg in "${pks[@]}"
+  do
+    echo "--- Checking $pkg ---"
+
+    if ! grep -q "^$pkg " /etc/setup/installed.db
+    then
+      warn "  $pkg is not installed"
+      (( errors++ ))
+      continue
+    fi
+
+    local bn archive
+    bn=$(awk -v p="$pkg" 'NR>1 && $1==p { print $2; exit }' \
+      /etc/setup/installed.db)
+
+    # ── Check 1: cached archive integrity (size, content, hash) ────────
+    archive=$(find "$cache" -name "$bn" -type f 2>/dev/null | head -1)
+    if [[ -n $archive ]]; then
+      if check-hollow "$pkg" "$archive"; then
+        local fcount
+        fcount=$(tar tf "$archive" 2>/dev/null \
+          | grep -v '/$' | grep -cEv '^\./?$' || echo '?')
+        echo "  archive: $(stat -c%s "$archive") bytes, $fcount files"
+
+        # Re-verify hash against what setup.ini currently advertises.
+        local iline chash cdigest
+        iline=$(awk '$1 == pc' RS='\n\n@ ' FS='\n' pc="$pkg" \
+            "$cache/$mirrordir/$arch/setup.ini" 2>/dev/null \
+          | awk '$1 == "install:" { print; exit }')
+        if [[ -n $iline ]]; then
+          cdigest=$(awk '{print $4}' <<< "$iline")
+          case ${#cdigest} in
+           32) chash=md5sum    ;;
+          128) chash=sha512sum ;;
+            *) chash=sha512sum ;;
+          esac
+          verify-hash "$chash" "$cdigest" "$archive" \
+            || (( errors++ ))
+        else
+          echo "  hash: package not found in setup.ini (skipping hash check)"
+        fi
+      else
+        (( errors++ ))
+      fi
+    else
+      echo "  archive: not in cache ($bn) — skipping archive/hash check"
+    fi
+
+    # ── Check 2: PE-header validation ───────────────────────────────────
+    if ! _check-pe-bins "$pkg"; then
+      (( errors++ ))
+    else
+      local dll_count
+      dll_count=$(gzip -cd /etc/setup/"$pkg".lst.gz 2>/dev/null \
+        | grep -ciE '\.(dll|exe)$' || echo 0)
+      (( dll_count > 0 )) && echo "  binaries: $dll_count PE file(s) OK"
+    fi
+
+    # ── Check 3: missing files ───────────────────────────────────────────
+    if [[ -f /etc/setup/"$pkg".lst.gz ]]; then
+      local missing=0 total=0
+      while IFS= read -r entry; do
+        local f="/${entry%$'\r'}"
+        [[ $f == */ ]] && continue    # skip directory entries
+        (( total++ ))
+        [[ -e $f ]] || (( missing++ ))
+      done < <(gzip -cd /etc/setup/"$pkg".lst.gz 2>/dev/null)
+      if (( missing > 0 )); then
+        warn "  files: $missing/$total missing from filesystem"
+        (( errors++ ))
+      else
+        echo "  files: $total/$total present"
+      fi
+    else
+      warn "  files: no manifest found (/etc/setup/$pkg.lst.gz)"
+    fi
+
+  done
+
+  echo
+  if (( errors > 0 )); then
+    warn "apt-check: $errors issue(s) found across ${#pks[@]} package(s)."
+    return 1
+  fi
+  echo "apt-check: all ${#pks[@]} package(s) OK."
+}
+
+function apt-search {
+  check-packages
+  echo Searching downloaded packages...
+  for pkg in "${pks[@]}"
+  do
+    # If the argument is a command in PATH, search for its resolved path
+    # (stripped of leading /) so we match the tar-listing format.
+    # Otherwise search for the raw string as a fixed literal (not regex).
+    local key found=0
+    key=$(type -P "$pkg" 2>/dev/null | sed 's|^/||')
+    [[ $key ]] || key=$pkg
+
+    for manifest in /etc/setup/*.lst.gz
+    do
+      if gzip -cd "$manifest" 2>/dev/null | grep -qF "$key"
+      then
+        echo "${manifest##*/etc/setup/}" | sed 's/\.lst\.gz$//'
+        found=1
+      fi
+    done
+
+    (( found )) || echo "No installed package owns '$pkg'"
+  done
+}
+
+function apt-searchall {
+  cd /tmp
+  for pkg in "${pks[@]}"
+  do
+    printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
+    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    awk '
+    NR == 1 {next}
+    mc[$1]++ {next}
+    /-debuginfo-/ {next}
+    /^cygwin32-/ {next}
+    {print $1}
+    ' FS=-[[:digit:]] matches
+  done
+}
+
+function apt-remove {
+  check-packages
+  cd /etc
+  cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
+  for pkg in "${pks[@]}"
+  do
+
+  if ! grep -q "^$pkg " setup/installed.db
+  then
+    echo Package $pkg is not installed, skipping
+    continue
+  fi
+
+  if [ ! -e setup/"$pkg".lst.gz ]
+  then
+    warn Package manifest missing, cannot remove $pkg. Exiting
+    exit 1
+  fi
+  gzip -dk setup/"$pkg".lst.gz
+  awk '
+  NR == FNR {
+    if ($NF) ess[$NF]
+    next
+  }
+  $NF in ess {
+    exit 1
+  }
+  ' FS='[/\\\\]' setup/{essential,$pkg}.lst
+  esn=$?
+  if [ $esn = 0 ]
+  then
+    echo Removing $pkg
+    if [ -e preremove/"$pkg".sh ]
+    then
+      preremove/"$pkg".sh
+      rm preremove/"$pkg".sh
+    fi
+    mapfile dt < setup/"$pkg".lst
+    for each in ${dt[*]}
+    do
+      [ -f /$each ] && rm /$each
+    done
+    for each in ${dt[*]}
+    do
+      [ -d /$each ] && rmdir --ignore-fail-on-non-empty /$each
+    done
+    rm -f setup/"$pkg".lst.gz postinstall/"$pkg".sh.done
+    awk -i inplace '$1 != ENVIRON["pkg"]' setup/installed.db
+    echo Package $pkg removed
+  fi
+  rm setup/"$pkg".lst
+  if [ $esn = 1 ]
+  then
+    warn apt-cyg cannot remove package $pkg, exiting
+    exit 1
+  fi
+
+  done
+}
+
+function apt-mirror {
+  if [ "$pks" ]
+  then
+    awk -i inplace '
+    1
+    /last-mirror/ {
+      getline
+      print "\t" pks
+    }
+    ' pks="$pks" /etc/setup/setup.rc
+    echo Mirror set to "$pks".
+  else
+    awk '
+    /last-mirror/ {
+      getline
+      print $1
+    }
+    ' /etc/setup/setup.rc
+  fi
+}
+
+function apt-cache {
+  if [ "$pks" ]
+  then
+    vas=$(cygpath -aw "$pks")
+    awk -i inplace '
+    1
+    /last-cache/ {
+      getline
+      print "\t" vas
+    }
+    ' vas="${vas//\\/\\\\}" /etc/setup/setup.rc
+    echo Cache set to "$vas".
+  else
+    awk '
+    /last-cache/ {
+      getline
+      print $1
+    }
+    ' /etc/setup/setup.rc
+  fi
+}
+
+if [ -p /dev/stdin ]
+then
+  mapfile -t pks
+fi
+
+# process options
+until [ $# = 0 ]
+do
+  case "$1" in
+
+    --nodeps)
+      nodeps=1
+      shift
+    ;;
+
+    --noscripts)
+      noscripts=1
+      shift
+    ;;
+
+    --allow-hollow)
+      allow_hollow=1
+      shift
+    ;;
+
+    --version)
+      printf "$version"
+      exit
+    ;;
+
+    update)
+      command=$1
+      shift
+    ;;
+
+    list | cache     | remove    | depends  | listall  | download | listfiles |\
+    show | mirror    | search    | install  | category | rdepends | searchall |\
+    reinstall | upgrade | check )
+      if [[ $command ]]
+      then
+        pks+=("$1")
+      else
+        command=$1
+      fi
+      shift
+    ;;
+
+    *)
+      pks+=("$1")
+      shift
+    ;;
+
+  esac
+done
+
+set -a
+
+if type -t apt-$command | grep -q function
+then
+  readonly arch=${HOSTTYPE/i6/x}
+  apt-$command
+else
+  printf "$usage"
+fi
