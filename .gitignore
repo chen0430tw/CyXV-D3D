@@ -1,0 +1,6 @@
+# Compiled objects and binaries
+*.o
+*.dll
+*.so
+*.a
+phoenix_receiver
