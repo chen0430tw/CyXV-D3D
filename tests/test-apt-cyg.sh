@@ -47,22 +47,6 @@ EOF
 chmod +x "$T/bin/cygcheck"
 # dash: used for *.dash postinstall scripts — symlink to bash
 ln -sf "$(command -v bash)" "$T/bin/dash" 2>/dev/null || true
-# awk wrapper: translate gawk's -i inplace to portable temp-file approach so
-# apt-remove's "awk -i inplace" works on systems with mawk instead of gawk.
-cat > "$T/bin/awk" << 'EOF'
-#!/usr/bin/env bash
-if [[ "$1" == "-i" && "$2" == "inplace" ]]; then
-  shift 2
-  prog="$1"; shift
-  for f in "$@"; do
-    tmp=$(mktemp)
-    /usr/bin/awk "$prog" "$f" > "$tmp" && mv "$tmp" "$f"
-  done
-else
-  exec /usr/bin/awk "$@"
-fi
-EOF
-chmod +x "$T/bin/awk"
 export PATH="$T/bin:$PATH"
 
 # ── Patch apt-cyg ──────────────────────────────────────────────────────────
@@ -84,39 +68,6 @@ sed \
   -e "s|  cd /etc$|  cd ${SYSROOT}/etc|g" \
   "$APT_CYG_SRC" > "$APT_CYG"
 
-# ── Inject mawk-compatible find-workspace override ──────────────────────────
-# The production code uses RS="\n\\<" which requires gawk (multi-char RS).
-# On Linux/mawk, only the first RS char (newline) is used, so setup.rc is
-# never parsed correctly and find-workspace returns empty cache/mirror.
-# Solution: append an override function that reads cache/mirror from env vars.
-# In bash, later function definitions overwrite earlier ones; the override is
-# inserted before "set -a" (after all originals but before any apt- call).
-python3 - "$APT_CYG" << 'PYEOF'
-import sys
-src = open(sys.argv[1]).read()
-override = r"""
-# ── Test harness override: mawk-compatible find-workspace ──────────────────
-function find-workspace {
-  cache="${_APTCYG_CACHE}"
-  mirror="${_APTCYG_MIRROR}"
-  mirrordir=$(sed '
-  s / %2f g
-  s : %3a g
-  ' <<< "$mirror")
-  mkdir -p "$cache/$mirrordir/$arch"
-  cd "$cache/$mirrordir/$arch"
-  if [ -e setup.ini ]
-  then
-    return 0
-  else
-    get-setup
-    return 1
-  fi
-}
-"""
-src = src.replace("\nset -a\n", override + "\nset -a\n", 1)
-open(sys.argv[1], "w").write(src)
-PYEOF
 chmod +x "$APT_CYG"
 
 # ── Package builders ────────────────────────────────────────────────────────
@@ -218,9 +169,6 @@ done
 HTTP_PORT=$(cat "$PORTFILE")
 MIRROR="http://127.0.0.1:${HTTP_PORT}"
 
-# Export for the injected find-workspace override
-export _APTCYG_CACHE="$CACHEDIR"
-export _APTCYG_MIRROR="$MIRROR"
 
 # ── installed.db and setup.rc ───────────────────────────────────────────────
 printf 'INSTALLED.DB 3\n' > "$ETCSETUP/installed.db"
@@ -402,15 +350,10 @@ echo "── 13. listfiles ──"
 check "listfiles shows installed file paths"  "usr/bin/testpkg-b.exe" listfiles testpkg-b
 echo
 
-# ── 14. depends / rdepends (gawk required) ───────────────────────────────────
+# ── 14. depends / rdepends ───────────────────────────────────────────────────
 echo "── 14. depends / rdepends ──"
-if command -v gawk &>/dev/null; then
-  check "depends shows A > B tree"   "testpkg-a > testpkg-b"  depends testpkg-a
-  check "rdepends shows B < A tree"  "testpkg-b < testpkg-a"  rdepends testpkg-b
-else
-  skip "gawk not available — apt-depends / apt-rdepends require gawk"
-  skip "gawk not available — apt-rdepends"
-fi
+check "depends shows A > B tree"   "testpkg-a > testpkg-b"  depends testpkg-a
+check "rdepends shows B < A tree"  "testpkg-b < testpkg-a"  rdepends testpkg-b
 echo
 
 # ── 15. remove ───────────────────────────────────────────────────────────────
