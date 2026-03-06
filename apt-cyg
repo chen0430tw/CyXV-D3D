@@ -229,7 +229,7 @@ function get-setup {
 }
 
 function check-packages {
-  if [[ $pks ]]
+  if [[ ${#pks[@]} -gt 0 ]]
   then
     return 0
   else
@@ -240,6 +240,27 @@ function check-packages {
 
 function warn {
   printf '\e[1;31m%s\e[m\n' "$*" >&2
+}
+
+# Compute the hash of <file> using <hashcmd>, compare against <expected>, and
+# print a one-line result in the style of Linux package managers:
+#
+#   Verifying sha512sum  bash-5.2.15-1.tar.xz ... OK
+#
+# Returns 0 on match, 1 on mismatch (also prints expected vs. actual values).
+function verify-hash {
+  local hashcmd=$1 expected=$2 file=$3 actual
+  printf 'Verifying %-10s %s ... ' "$hashcmd" "$(basename "$file")"
+  actual=$($hashcmd "$file" 2>/dev/null | awk '{print $1}')
+  if [[ "$actual" == "$expected" ]]; then
+    echo 'OK'
+    return 0
+  else
+    printf '\e[1;31mFAILED\e[m\n' >&2
+    warn "  Expected : $expected"
+    warn "  Got      : ${actual:-<could not compute hash>}"
+    return 1
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -418,7 +439,7 @@ function apt-category {
     $1 == "category:" && $0 ~ query {
       print pck
     }
-    ' query="$pks" setup.ini
+    ' query="$pkg" setup.ini
   done
 }
 
@@ -427,10 +448,11 @@ function apt-list {
   for pkg in "${pks[@]}"
   do
     let sbq++ && echo
-    awk 'NR>1 && $1~pkg && $0=$1' pkg="$pkg" /etc/setup/installed.db
+    awk 'NR>1 && $1~pkg { printf "%-30s %s\n", $1, $2 }' \
+      pkg="$pkg" /etc/setup/installed.db
   done
   let sbq && return
-  awk 'NR>1 && $0=$1' /etc/setup/installed.db
+  awk 'NR>1 { printf "%-30s %s\n", $1, $2 }' /etc/setup/installed.db
 }
 
 function apt-listall {
@@ -440,7 +462,33 @@ function apt-listall {
   for pkg in "${pks[@]}"
   do
     let sbq++ && echo
-    awk '$1~pkg && $0=$1' RS='\n\n@ ' FS='\n' pkg="$pkg" setup.ini
+    # Match on package name OR short description (case-insensitive on sdesc).
+    awk '
+    {
+      name = $1
+      matched = (name ~ pkg)
+      if (!matched) {
+        for (i = 2; i <= NF; i++) {
+          if ($i ~ /^sdesc:/ && tolower($i) ~ tolower(pkg)) {
+            matched = 1
+            break
+          }
+        }
+      }
+      if (matched) {
+        printf "%-30s", name
+        for (i = 2; i <= NF; i++) {
+          if ($i ~ /^sdesc:/) {
+            desc = $i
+            gsub(/^sdesc:[[:space:]]*"|"[[:space:]]*$/, "", desc)
+            printf "  %s", desc
+            break
+          }
+        }
+        print ""
+      }
+    }
+    ' RS='\n\n@ ' FS='\n' pkg="$pkg" setup.ini
   done
 }
 
@@ -465,14 +513,23 @@ function apt-show {
   for pkg in "${pks[@]}"
   do
     (( notfirst++ )) && echo
+    # Exact match first; if not found, fall back to regex and list candidates.
     awk '
     $1 == query {
       print
-      fd++
+      exact++
+    }
+    $1 != query && $1 ~ query {
+      fuzzy[++fn] = $1
     }
     END {
-      if (! fd)
-        print "Unable to locate package " query
+      if (exact) exit
+      if (fn) {
+        print "No exact match for \"" query "\". Similar packages:"
+        for (i = 1; i <= fn; i++) print "  " fuzzy[i]
+      } else {
+        print "Unable to locate package \"" query "\""
+      }
     }
     ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
   done
@@ -605,11 +662,19 @@ function download {
 
   mkdir -p "$cache/$mirrordir/$dn"
   cd "$cache/$mirrordir/$dn"
-  if ! test -e $bn || ! $hash -c <<< "$digest  $bn"
+
+  # Download only if the file is absent or its cached copy fails verification.
+  # The silent pre-check avoids a redundant download on cache hits.
+  if ! test -e "$bn" || \
+     [[ "$($hash "$bn" 2>/dev/null | awk '{print $1}')" != "$digest" ]]
   then
-    wget -O $bn $mirror/$dn/$bn
-    $hash -c <<< "$digest  $bn" || exit
+    echo "Downloading $bn ..."
+    wget -O "$bn" "$mirror/$dn/$bn"
   fi
+
+  # Always display an explicit verification line so the operator can confirm
+  # the integrity check ran and passed.  Abort on mismatch.
+  verify-hash "$hash" "$digest" "$bn" || exit
 
   # ── Hollow-package check (Layer 1 + 2, pre-extraction) ─────────────────
   # Hash verification above only confirms the downloaded bytes match the hash
@@ -664,10 +729,12 @@ function _do-install {
   # Verify that every installed DLL/EXE carries a valid Windows PE magic.
   # Stubs sometimes ship a text or zero-byte file under a .dll name; those
   # pass extraction silently but crash immediately on load.
+  # NOTE: this check runs BEFORE installed.db is updated, so on failure we
+  # simply abort — there is nothing to roll back in the database yet.
   _check-pe-bins "$pkg" || {
     if [ ! -v allow_hollow ]; then
-      warn "Rolling back $pkg from installed.db."
-      awk -i inplace '$1 != ENVIRON["pkg"]' /etc/setup/installed.db
+      warn "Installation of $pkg aborted: ghost binaries detected."
+      warn "Extracted files remain on disk; installed.db was NOT updated."
       exit 1
     fi
   }
@@ -802,18 +869,37 @@ function apt-check {
     bn=$(awk -v p="$pkg" 'NR>1 && $1==p { print $2; exit }' \
       /etc/setup/installed.db)
 
-    # ── Check 1: cached archive (if still available) ────────────────────
+    # ── Check 1: cached archive integrity (size, content, hash) ────────
     archive=$(find "$cache" -name "$bn" -type f 2>/dev/null | head -1)
     if [[ -n $archive ]]; then
       if check-hollow "$pkg" "$archive"; then
-        echo "  archive: OK ($(stat -c%s "$archive") bytes, $(
-          tar tf "$archive" 2>/dev/null | grep -v '/$' | grep -cEv '^\./?$' \
-          || echo '?') files)"
+        local fcount
+        fcount=$(tar tf "$archive" 2>/dev/null \
+          | grep -v '/$' | grep -cEv '^\./?$' || echo '?')
+        echo "  archive: $(stat -c%s "$archive") bytes, $fcount files"
+
+        # Re-verify hash against what setup.ini currently advertises.
+        local iline chash cdigest
+        iline=$(awk '$1 == pc' RS='\n\n@ ' FS='\n' pc="$pkg" \
+            "$cache/$mirrordir/$arch/setup.ini" 2>/dev/null \
+          | awk '$1 == "install:" { print; exit }')
+        if [[ -n $iline ]]; then
+          cdigest=$(awk '{print $4}' <<< "$iline")
+          case ${#cdigest} in
+           32) chash=md5sum    ;;
+          128) chash=sha512sum ;;
+            *) chash=sha512sum ;;
+          esac
+          verify-hash "$chash" "$cdigest" "$archive" \
+            || (( errors++ ))
+        else
+          echo "  hash: package not found in setup.ini (skipping hash check)"
+        fi
       else
         (( errors++ ))
       fi
     else
-      echo "  archive: not in cache ($bn) — skipping archive check"
+      echo "  archive: not in cache ($bn) — skipping archive/hash check"
     fi
 
     # ── Check 2: PE-header validation ───────────────────────────────────
@@ -860,19 +946,23 @@ function apt-search {
   echo Searching downloaded packages...
   for pkg in "${pks[@]}"
   do
-    key=$(type -P "$pkg" | sed s./..)
+    # If the argument is a command in PATH, search for its resolved path
+    # (stripped of leading /) so we match the tar-listing format.
+    # Otherwise search for the raw string as a fixed literal (not regex).
+    local key found=0
+    key=$(type -P "$pkg" 2>/dev/null | sed 's|^/||')
     [[ $key ]] || key=$pkg
+
     for manifest in /etc/setup/*.lst.gz
     do
-      if gzip -cd $manifest | grep -q "$key"
+      if gzip -cd "$manifest" 2>/dev/null | grep -qF "$key"
       then
-        package=$(sed '
-        s,/etc/setup/,,
-        s,.lst.gz,,
-        ' <<< $manifest)
-        echo $package
+        echo "${manifest##*/etc/setup/}" | sed 's/\.lst\.gz$//'
+        found=1
       fi
     done
+
+    (( found )) || echo "No installed package owns '$pkg'"
   done
 }
 
