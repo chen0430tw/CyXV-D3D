@@ -668,8 +668,14 @@ function download {
   if ! test -e "$bn" || \
      [[ "$($hash "$bn" 2>/dev/null | awk '{print $1}')" != "$digest" ]]
   then
-    echo "Downloading $bn ..."
-    wget -O "$bn" "$mirror/$dn/$bn"
+    local size_h
+    size_h=$(awk -v b="$3" 'BEGIN {
+      if (b+0 >= 1048576) printf "%.1f MB", b/1048576
+      else if (b+0 >= 1024) printf "%d kB", int(b/1024)
+      else printf "%d B", b+0
+    }')
+    printf 'Get: %s/%s/%s [%s]\n' "$mirror" "$dn" "$bn" "$size_h"
+    wget -q --show-progress -O "$bn" "$mirror/$dn/$bn"
   fi
 
   # Always display an explicit verification line so the operator can confirm
