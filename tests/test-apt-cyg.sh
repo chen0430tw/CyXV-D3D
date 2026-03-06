@@ -29,6 +29,7 @@ mkdir -p "$ETCSETUP" "$ETCPOST" "$ETCPRE" "$CACHEDIR" \
          "$SYSROOT/usr/bin" "$SYSROOT/tmp" \
          "$MIRRORROOT/x86_64/release/testpkg-a" \
          "$MIRRORROOT/x86_64/release/testpkg-b" \
+         "$MIRRORROOT/x86_64/release/testpkg-c" \
          "$MIRRORROOT/x86_64/release/hollow-pkg" \
          "$T/pkgtmp" "$T/bin"
 
@@ -63,6 +64,7 @@ sed \
   -e "s|/etc/postinstall|${ETCPOST}|g" \
   -e "s|/etc/preremove|${ETCPRE}|g" \
   -e "s|tar -x -C / |tar -x -C ${SYSROOT} |g" \
+  -e "s|rm -f \"/\$f\"|rm -f \"${SYSROOT}/\$f\"|g" \
   -e "s|path=\"/\${|path=\"${SYSROOT}/\${|g" \
   -e "s|local f=\"/\${|local f=\"${SYSROOT}/\${|g" \
   -e "s|  cd /etc$|  cd ${SYSROOT}/etc|g" \
@@ -100,12 +102,14 @@ sha512of() { sha512sum "$1" | awk '{print $1}'; }
 # ── Build test fixtures ─────────────────────────────────────────────────────
 ARC_B=$(make-pkg  "testpkg-b" "2.0-1")
 ARC_A=$(make-pkg  "testpkg-a" "1.0-1")
+ARC_C=$(make-pkg  "testpkg-c" "1.0-1")          # depends on virtual name provided by testpkg-b
 ARC_H=$(make-hollow-pkg "hollow-pkg" "1.0-1")
 ARC_A2=$(make-pkg "testpkg-a" "1.1-1")          # upgrade target (already in mirror dir)
 
-SIZE_A=$(stat -c%s "$ARC_A");  HASH_A=$(sha512of "$ARC_A")
-SIZE_B=$(stat -c%s "$ARC_B");  HASH_B=$(sha512of "$ARC_B")
-SIZE_H=$(stat -c%s "$ARC_H");  HASH_H=$(sha512of "$ARC_H")
+SIZE_A=$(stat -c%s "$ARC_A");   HASH_A=$(sha512of "$ARC_A")
+SIZE_B=$(stat -c%s "$ARC_B");   HASH_B=$(sha512of "$ARC_B")
+SIZE_C=$(stat -c%s "$ARC_C");   HASH_C=$(sha512of "$ARC_C")
+SIZE_H=$(stat -c%s "$ARC_H");   HASH_H=$(sha512of "$ARC_H")
 SIZE_A2=$(stat -c%s "$ARC_A2"); HASH_A2=$(sha512of "$ARC_A2")
 
 # ── Write setup.ini and compress it ────────────────────────────────────────
@@ -129,8 +133,16 @@ install: x86_64/release/testpkg-a/testpkg-a-${a_ver}.tar.xz ${a_size} ${a_hash}
 sdesc: "Test Package B - standalone dependency"
 ldesc: "Standalone package used as a dependency by testpkg-a"
 category: Test
+provides: testpkg-b-virtual
 version: 2.0-1
 install: x86_64/release/testpkg-b/testpkg-b-2.0-1.tar.xz ${SIZE_B} ${HASH_B}
+
+@ testpkg-c
+sdesc: "Test Package C - depends on virtual name provided by B"
+category: Test
+depends2: testpkg-b-virtual
+version: 1.0-1
+install: x86_64/release/testpkg-c/testpkg-c-1.0-1.tar.xz ${SIZE_C} ${HASH_C}
 
 @ hollow-pkg
 sdesc: "Hollow stub package for detection testing"
@@ -356,8 +368,18 @@ check "depends shows A > B tree"   "testpkg-a > testpkg-b"  depends testpkg-a
 check "rdepends shows B < A tree"  "testpkg-b < testpkg-a"  rdepends testpkg-b
 echo
 
-# ── 15. remove ───────────────────────────────────────────────────────────────
-echo "── 15. remove ──"
+# ── 15. virtual-package (provides:) resolution ───────────────────────────────
+echo "── 15. virtual-package resolution ──"
+# testpkg-c depends on "testpkg-b-virtual"; testpkg-b provides that name.
+# apt-cyg must resolve the virtual and install testpkg-b automatically.
+check "virtual dep resolved — provider reported"  \
+      "(virtual testpkg-b-virtual provided by testpkg-b)"  install testpkg-c
+check "provider package installed via virtual"  "testpkg-b"  list testpkg-b
+check "package depending on virtual is installed"  "testpkg-c"  list testpkg-c
+echo
+
+# ── 16. remove ───────────────────────────────────────────────────────────────
+echo "── 16. remove ──"
 check "remove outputs confirmation"        "removed"   remove testpkg-b
 check_absent "removed pkg gone from list"  "testpkg-b" list testpkg-b || true
 echo
