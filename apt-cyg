@@ -297,16 +297,29 @@ function check-hollow {
   size=$(stat -c%s "$archive" 2>/dev/null || echo 0)
 
   if (( size < HOLLOW_MIN_BYTES )); then
+    # Before raising an alarm, peek inside the archive.  A legitimate
+    # meta-package (e.g. python3, gcc) ships only symlinks and post-install
+    # scripts — no .dll/.exe entries.  Only flag archives that are tiny AND
+    # either not a valid tar at all, or contain binary-named entries.
+    local bin_entries=1   # assume the worst until proven otherwise
+    if tar -tf "$archive" &>/dev/null; then
+      # Valid tar: count binary-named entries.
+      bin_entries=$(tar -tf "$archive" 2>/dev/null \
+        | grep -ciE '\.(dll|exe)$' || true)
+    fi
+
+    if (( bin_entries == 0 )); then
+      # Valid tar with no binary entries → meta-package; safe to install.
+      return 0
+    fi
+
     warn "*** HOLLOW PACKAGE: $pkg ***"
     warn "    Archive : $(basename "$archive")"
     warn "    Size    : ${size} bytes (threshold: ${HOLLOW_MIN_BYTES})"
     warn "    The archive passed hash verification because setup.ini records"
     warn "    the hash of the stub itself — but there is no usable payload."
-    warn "    You must compile the real library from source, e.g.:"
-    warn "      apt-cyg install perl_base gcc-core make zlib-devel"
-    warn "      # fetch the *-src tarball, extract it, then:"
-    warn "      ./Configure Cygwin shared && make"
-    warn "      cp cyg*.dll /usr/bin/"
+    warn "    Try searching for the real versioned package, e.g.:"
+    warn "      apt-cyg listall $pkg"
     if [ -v allow_hollow ]; then
       warn "    (--allow-hollow set; proceeding anyway)"
       return 0
