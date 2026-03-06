@@ -109,15 +109,35 @@ typedef ExtensionEntry * (*AddExtensionFn)(
 
 typedef void (*WriteToClientFn)(void *client, int len, const void *data);
 
-/* ── /proc/self/maps: XWin.exe image base ────────────────────────────── */
+/* ── Main executable image base from /proc/self/maps ─────────────────
+ * Reads /proc/self/exe to get the executable path, then finds its first
+ * mapping in /proc/self/maps.  Works for both XWin.exe (Cygwin) and
+ * the xwin_stub test binary (Linux).
+ */
 
 static uintptr_t xwin_image_base(void) {
+    /* Resolve the actual executable path */
+    char exepath[512] = {0};
+    ssize_t n = readlink("/proc/self/exe", exepath, sizeof(exepath) - 1);
+    if (n <= 0) return 0;
+    exepath[n] = '\0';
+
+    /* Strip directory to get basename */
+    const char *base_name = strrchr(exepath, '/');
+    base_name = base_name ? base_name + 1 : exepath;
+
     FILE *f = fopen("/proc/self/maps", "r");
     if (!f) return 0;
     char line[512];
     uintptr_t base = 0;
     while (fgets(line, sizeof(line), f)) {
-        if (strstr(line, "XWin") && strchr(line, 'r')) {
+        /* Match by basename (case-insensitive for "XWin" vs "xwin_stub") */
+        char *slash = strrchr(line, '/');
+        const char *entry_name = slash ? slash + 1 : line;
+        /* Check that the mapped file starts with the same name as the exe */
+        size_t blen = strlen(base_name);
+        if (strncasecmp(entry_name, base_name, blen) == 0 &&
+            strchr(line, 'r')) {
             base = (uintptr_t)strtoull(line, NULL, 16);
             break;
         }
