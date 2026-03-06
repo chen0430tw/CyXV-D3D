@@ -406,6 +406,39 @@ function get-requires {
   ' "$descfile"
 }
 
+# resolve-provides <pkg>
+# Returns <pkg> unchanged if it exists as a real package in setup.ini.
+# If no real package by that name exists but some package declares
+# "provides: ... <pkg> ...", returns that package's name instead.
+# Falls back to <pkg> unchanged when nothing matches (caller gets
+# the "Unable to locate package" error from download()).
+function resolve-provides {
+  local pkg=$1 ini="$cache/$mirrordir/$arch/setup.ini"
+  [[ -f $ini ]] || { echo "$pkg"; return; }
+  awk -v want="$pkg" '
+  NF {
+    name = $1
+    # Record whether an exact-named package exists.
+    if (name == want) { exact = name }
+    # Scan provides: lines for a virtual-name match.
+    for (i = 2; i <= NF; i++) {
+      if ($i ~ /^provides:/) {
+        line = $i
+        sub(/^provides:[[:space:]]*/, "", line)
+        n = split(line, a, /[[:space:]]+/)
+        for (j = 1; j <= n; j++)
+          if (a[j] == want) { provider = name }
+      }
+    }
+  }
+  END {
+    if (exact)    print exact
+    else if (provider) print provider
+    else          print want
+  }
+  ' RS='\n\n@ ' FS='\n' "$ini"
+}
+
 # Run all pending postinstall scripts (.sh and .dash).
 function run-postinstall {
   find /etc/postinstall \( -name '*.sh' -o -name '*.dash' \) | sort | \
@@ -795,6 +828,13 @@ function _do-install {
     for package in $requires
     do
       [[ -z $package ]] && continue
+      # Resolve virtual package names (e.g. "gcc13" → "gcc-core" via provides:).
+      local resolved
+      resolved=$(resolve-provides "$package")
+      if [[ "$resolved" != "$package" ]]; then
+        echo "  (virtual $package provided by $resolved)"
+        package=$resolved
+      fi
       if grep -q "^$package " /etc/setup/installed.db
       then
         echo "  $package already installed"
