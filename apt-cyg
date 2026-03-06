@@ -57,6 +57,12 @@ OPERATIONS
     Upgrade named package(s) to the current version in setup.ini. If no
     packages are specified, upgrade all installed packages.
 
+  check
+    Inspect installed package(s) for hollow/stub installs.  Three checks are
+    performed: (1) cached archive size and content, (2) PE-header validity of
+    every installed DLL/EXE, (3) presence of every recorded file on disk.
+    Useful after installing from an archive mirror that may contain stubs.
+
   update
     Download a fresh copy of the master package list (setup.ini) from the
     server defined in setup.rc.
@@ -116,6 +122,12 @@ OPTIONS
   --noscripts
     Do not run postinstall scripts.
 
+  --allow-hollow
+    Suppress the hollow-package abort and proceed with installation even when
+    an archive is identified as a stub.  The PE-header check after extraction
+    is also downgraded from an error to a warning.  Use with caution: you will
+    most likely end up with a non-functional install.
+
   --version
     Display version and exit.
 "
@@ -131,6 +143,15 @@ Copyright (c) 2005-9 Stephen Jungels
 # Global guard: tracks packages currently being processed to break
 # circular dependency chains (e.g. A requires B requires A).
 declare -A _installing
+
+# Minimum archive size in bytes below which a package is unconditionally
+# flagged as a hollow stub.  The canonical example from the 2022 Archive
+# is libopenssl100 at 108 bytes — it passes SHA-512 verification because
+# setup.ini records the hash of the stub itself.
+readonly HOLLOW_MIN_BYTES=1024
+
+# Archives below this size receive extra content-validation.
+readonly HOLLOW_WARN_BYTES=65536
 
 function wget {
   if command wget -h &>/dev/null
@@ -219,6 +240,118 @@ function check-packages {
 
 function warn {
   printf '\e[1;31m%s\e[m\n' "$*" >&2
+}
+
+# ---------------------------------------------------------------------------
+# Hollow-package / stub detection
+# ---------------------------------------------------------------------------
+#
+# Background: Cygwin archive mirrors (especially the 2022 snapshot) contain
+# packages whose .tar.xz/.tar.bz2 file is a valid, hash-matching archive that
+# nevertheless carries no usable payload — a "stub" or "hollow" package.
+# Because apt-cyg verifies only the hash (which matches the stub), these
+# packages install silently and leave the system in a broken state.
+#
+# Two complementary checks address this:
+#
+#   check-hollow  <pkg> <archive-path>
+#     Run BEFORE extraction.  Tests archive byte-size and non-directory
+#     file count.  Should be called from download().
+#
+#   _check-pe-bins  <pkg>
+#     Run AFTER extraction.  Reads /etc/setup/<pkg>.lst.gz and verifies that
+#     every installed .dll/.exe starts with the Windows PE magic bytes (MZ,
+#     0x4D 0x5A).  A file of the right name but wrong content — a "ghost
+#     binary" — will compile fine into installed.db but crash at load time.
+# ---------------------------------------------------------------------------
+
+# Check a downloaded archive for hollow/stub characteristics.
+# Returns 0 (archive looks real) or 1 (hollow — do not install).
+# When ALLOW_HOLLOW is set the function emits a warning but returns 0.
+function check-hollow {
+  local pkg=$1 archive=$2
+  local size real_files
+
+  # ── Layer 1: size gate ──────────────────────────────────────────────────
+  size=$(stat -c%s "$archive" 2>/dev/null || echo 0)
+
+  if (( size < HOLLOW_MIN_BYTES )); then
+    warn "*** HOLLOW PACKAGE: $pkg ***"
+    warn "    Archive : $(basename "$archive")"
+    warn "    Size    : ${size} bytes (threshold: ${HOLLOW_MIN_BYTES})"
+    warn "    The archive passed hash verification because setup.ini records"
+    warn "    the hash of the stub itself — but there is no usable payload."
+    warn "    You must compile the real library from source, e.g.:"
+    warn "      apt-cyg install perl_base gcc-core make zlib-devel"
+    warn "      # fetch the *-src tarball, extract it, then:"
+    warn "      ./Configure Cygwin shared && make"
+    warn "      cp cyg*.dll /usr/bin/"
+    if [ -v allow_hollow ]; then
+      warn "    (--allow-hollow set; proceeding anyway)"
+      return 0
+    fi
+    return 1
+  fi
+
+  if (( size < HOLLOW_WARN_BYTES )); then
+    warn "WARNING: $pkg archive is only ${size} bytes — verifying contents..."
+  fi
+
+  # ── Layer 2: content gate ───────────────────────────────────────────────
+  # Count entries that are NOT bare directories.  A valid package must ship
+  # at least one real file.
+  real_files=$(tar tf "$archive" 2>/dev/null \
+    | grep -v '/$' | grep -cEv '^\./?$' || true)
+
+  if (( real_files == 0 )); then
+    warn "*** HOLLOW PACKAGE: $pkg — archive contains only empty directories ***"
+    warn "    Archive : $(basename "$archive")"
+    warn "    This is a stub. Obtain the real binary or compile from source."
+    if [ -v allow_hollow ]; then
+      warn "    (--allow-hollow set; proceeding anyway)"
+      return 0
+    fi
+    return 1
+  fi
+
+  return 0
+}
+
+# Verify PE magic bytes (MZ header) on every .dll / .exe installed by <pkg>.
+# Uses od(1), which is always present on Cygwin.
+# Returns 0 (all OK) or 1 (one or more ghost binaries found).
+function _check-pe-bins {
+  local pkg=$1 bad=0 path magic entry
+
+  [[ -f /etc/setup/"$pkg".lst.gz ]] || return 0
+
+  while IFS= read -r entry; do
+    path="/${entry%$'\r'}"
+    [[ -f $path ]] || continue
+    # Read the first two bytes; a valid PE file begins with 0x4D 0x5A ("MZ").
+    magic=$(od -An -tx1 -N2 "$path" 2>/dev/null | tr -d ' \n')
+    if [[ ${magic,,} != "4d5a" ]]; then
+      warn "  GHOST BINARY: $path"
+      warn "    Expected MZ/PE header, got: '${magic:-<unreadable>}'"
+      warn "    This file is a stub — it will fail to load at runtime."
+      (( bad++ ))
+    fi
+  done < <(gzip -cd /etc/setup/"$pkg".lst.gz 2>/dev/null \
+    | grep -iE '\.(dll|exe)$')
+
+  if (( bad > 0 )); then
+    warn "Package $pkg: $bad binary file(s) failed PE-header validation."
+    warn "  hollow install detected — binaries are non-functional stubs."
+    warn "  Re-run: apt-cyg reinstall $pkg  (after obtaining real binaries)"
+    warn "  or compile from source and copy the DLLs into /usr/bin/ manually."
+    if [ -v allow_hollow ]; then
+      warn "  (--allow-hollow set; recorded as installed anyway)"
+      return 0
+    fi
+    return 1
+  fi
+
+  return 0
 }
 
 # Extract the dependency list from a desc file.
@@ -478,6 +611,17 @@ function download {
     $hash -c <<< "$digest  $bn" || exit
   fi
 
+  # ── Hollow-package check (Layer 1 + 2, pre-extraction) ─────────────────
+  # Hash verification above only confirms the downloaded bytes match the hash
+  # recorded in setup.ini — it cannot detect stubs whose hash was correctly
+  # published alongside the stub itself.
+  if ! check-hollow "$pkg" "$bn"
+  then
+    warn "Aborting installation of $pkg."
+    warn "Use --allow-hollow to override and install the stub anyway."
+    exit 1
+  fi
+
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
   cd ~-
   mv desc "$cache/$mirrordir/$dn"
@@ -515,6 +659,18 @@ function _do-install {
 
   cd "$cache/$mirrordir/$dn"
   tar -x -C / -f "$bn"
+
+  # ── PE-header check (Layer 3, post-extraction) ──────────────────────────
+  # Verify that every installed DLL/EXE carries a valid Windows PE magic.
+  # Stubs sometimes ship a text or zero-byte file under a .dll name; those
+  # pass extraction silently but crash immediately on load.
+  _check-pe-bins "$pkg" || {
+    if [ ! -v allow_hollow ]; then
+      warn "Rolling back $pkg from installed.db."
+      awk -i inplace '$1 != ENVIRON["pkg"]' /etc/setup/installed.db
+      exit 1
+    fi
+  }
 
   # Insert (or replace) the package record in installed.db in sorted order.
   # Third column: 1 = explicitly installed by user, 0 = auto-dependency.
@@ -624,6 +780,79 @@ function apt-upgrade {
   rm -rf "$tmpd"
   [ -v noscripts ] && return
   run-postinstall
+}
+
+function apt-check {
+  check-packages
+  find-workspace
+  local pkg errors=0
+
+  for pkg in "${pks[@]}"
+  do
+    echo "--- Checking $pkg ---"
+
+    if ! grep -q "^$pkg " /etc/setup/installed.db
+    then
+      warn "  $pkg is not installed"
+      (( errors++ ))
+      continue
+    fi
+
+    local bn archive
+    bn=$(awk -v p="$pkg" 'NR>1 && $1==p { print $2; exit }' \
+      /etc/setup/installed.db)
+
+    # ── Check 1: cached archive (if still available) ────────────────────
+    archive=$(find "$cache" -name "$bn" -type f 2>/dev/null | head -1)
+    if [[ -n $archive ]]; then
+      if check-hollow "$pkg" "$archive"; then
+        echo "  archive: OK ($(stat -c%s "$archive") bytes, $(
+          tar tf "$archive" 2>/dev/null | grep -v '/$' | grep -cEv '^\./?$' \
+          || echo '?') files)"
+      else
+        (( errors++ ))
+      fi
+    else
+      echo "  archive: not in cache ($bn) — skipping archive check"
+    fi
+
+    # ── Check 2: PE-header validation ───────────────────────────────────
+    if ! _check-pe-bins "$pkg"; then
+      (( errors++ ))
+    else
+      local dll_count
+      dll_count=$(gzip -cd /etc/setup/"$pkg".lst.gz 2>/dev/null \
+        | grep -ciE '\.(dll|exe)$' || echo 0)
+      (( dll_count > 0 )) && echo "  binaries: $dll_count PE file(s) OK"
+    fi
+
+    # ── Check 3: missing files ───────────────────────────────────────────
+    if [[ -f /etc/setup/"$pkg".lst.gz ]]; then
+      local missing=0 total=0
+      while IFS= read -r entry; do
+        local f="/${entry%$'\r'}"
+        [[ $f == */ ]] && continue    # skip directory entries
+        (( total++ ))
+        [[ -e $f ]] || (( missing++ ))
+      done < <(gzip -cd /etc/setup/"$pkg".lst.gz 2>/dev/null)
+      if (( missing > 0 )); then
+        warn "  files: $missing/$total missing from filesystem"
+        (( errors++ ))
+      else
+        echo "  files: $total/$total present"
+      fi
+    else
+      warn "  files: no manifest found (/etc/setup/$pkg.lst.gz)"
+    fi
+
+  done
+
+  echo
+  if (( errors > 0 )); then
+    warn "apt-check: $errors issue(s) found across ${#pks[@]} package(s)."
+    return 1
+  fi
+  echo "apt-check: all ${#pks[@]} package(s) OK."
 }
 
 function apt-search {
@@ -786,6 +1015,11 @@ do
       shift
     ;;
 
+    --allow-hollow)
+      allow_hollow=1
+      shift
+    ;;
+
     --version)
       printf "$version"
       exit
@@ -798,7 +1032,7 @@ do
 
     list | cache     | remove    | depends  | listall  | download | listfiles |\
     show | mirror    | search    | install  | category | rdepends | searchall |\
-    reinstall | upgrade )
+    reinstall | upgrade | check )
       if [[ $command ]]
       then
         pks+=("$1")
