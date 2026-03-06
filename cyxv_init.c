@@ -180,10 +180,14 @@ static void *init_thread(void *arg) {
     if (wtc)  cyxv_set_write_fn(wtc);
     else      fprintf(stderr, "[CyXV] WARNING: WriteToClient missing — no replies\n");
 
-    /* ── Open private Display for rendering ─────────────────────────── */
+    /* ── Open private Display and start render thread ───────────────── */
     Display *dpy = XOpenDisplay(":0");
-    if (dpy)  cyxv_set_display(dpy, DefaultScreen(dpy));
-    else      fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(:0) failed\n");
+    if (dpy) {
+        cyxv_set_display(dpy, DefaultScreen(dpy));
+        cyxv_start_render_thread();   /* owns all shmat/YUV/XPutImage */
+    } else {
+        fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(:0) failed\n");
+    }
 
     /* ── Call AddExtension ──────────────────────────────────────────── */
     ExtensionEntry *entry = add_ext(
