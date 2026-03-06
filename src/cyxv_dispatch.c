@@ -151,8 +151,16 @@ static sem_t     g_sem;   /* render thread sleeps on this */
 static int ring_enqueue(const FrameMeta *m) {
     uint32_t head = __atomic_load_n(&g_ring.head, __ATOMIC_RELAXED);
     uint32_t tail = __atomic_load_n(&g_ring.tail, __ATOMIC_ACQUIRE);
-    if (head - tail >= RING_SIZE)
-        return -1;  /* full — drop frame */
+    if (head - tail >= RING_SIZE) {
+        fprintf(stderr, "[CyXV:DBG] ring FULL — dropping frame "
+                "fourcc=%.4s %ux%u drw=0x%x\n",
+                (const char *)&m->fourcc, m->width, m->height, m->drawable);
+        return -1;
+    }
+    fprintf(stderr, "[CyXV:DBG] ring_enqueue [%u] fourcc=%.4s %ux%u "
+            "drw=0x%x shmseg=0x%x shmid=%d\n",
+            head & RING_MASK, (const char *)&m->fourcc,
+            m->width, m->height, m->drawable, m->shmseg, m->shmid);
     g_ring.slots[head & RING_MASK] = *m;
     __atomic_store_n(&g_ring.head, head + 1, __ATOMIC_RELEASE);
     sem_post(&g_sem);
@@ -257,6 +265,10 @@ static void nv12_to_bgra(const uint8_t *s, int w, int h, uint8_t *dst) {
 
 static void render_frame(const FrameMeta *m, const uint8_t *pixels) {
     if (!g_dpy || !pixels) return;
+    fprintf(stderr, "[CyXV:DBG] render_frame fourcc=%.4s %ux%u "
+            "drw=0x%x dst=(%d,%d,%ux%u)\n",
+            (const char *)&m->fourcc, m->width, m->height, m->drawable,
+            m->drw_x, m->drw_y, m->drw_w, m->drw_h);
 
     int w = m->width, h = m->height;
     uint8_t *bgra = malloc((size_t)w * h * 4);
@@ -559,6 +571,11 @@ static int h_ShmPutImage(void *c) {
      * Falls back to low-24-bits heuristic if dixLookupResourceByType
      * was not resolved at init time.                                  */
     int shmid = shmseg_to_shmid(req->shmseg, c);
+    fprintf(stderr, "[CyXV:DBG] ShmPutImage shmseg=0x%x → shmid=%d "
+            "offset=%u fourcc=%.4s %ux%u drw=0x%x\n",
+            req->shmseg, shmid, req->offset,
+            (const char *)&req->id,
+            req->width, req->height, req->drawable);
 
     FrameMeta m = {
         .fourcc     = req->id,
@@ -618,11 +635,33 @@ static int h_PutImage(void *c) {
     return 0;
 }
 
+/* Minor opcode → name table for debug logging */
+static const char *opcode_name(uint8_t op) {
+    switch (op) {
+    case X_XvQueryExtension:       return "QueryExtension";
+    case X_XvQueryAdaptors:        return "QueryAdaptors";
+    case X_XvQueryEncodings:       return "QueryEncodings";
+    case X_XvGrabPort:             return "GrabPort";
+    case X_XvUngrabPort:           return "UngrabPort";
+    case X_XvQueryBestSize:        return "QueryBestSize";
+    case X_XvSetPortAttribute:     return "SetPortAttribute";
+    case X_XvGetPortAttribute:     return "GetPortAttribute";
+    case X_XvQueryPortAttributes:  return "QueryPortAttributes";
+    case X_XvListImageFormats:     return "ListImageFormats";
+    case X_XvQueryImageAttributes: return "QueryImageAttributes";
+    case X_XvPutImage:             return "PutImage";
+    case X_XvShmPutImage:          return "ShmPutImage";
+    default:                       return "Unknown";
+    }
+}
+
 /* ── Public dispatch entry point ─────────────────────────────────────── */
 
 int cyxv_dispatch(void *client) {
     const xGenericReq *req = req_buf(client);
     if (!req) return 0;
+    fprintf(stderr, "[CyXV:DBG] dispatch minor=%u (%s)\n",
+            req->minor_opcode, opcode_name(req->minor_opcode));
     switch (req->minor_opcode) {
     case X_XvQueryExtension:       return h_QueryExtension(client);
     case X_XvQueryAdaptors:        return h_QueryAdaptors(client);

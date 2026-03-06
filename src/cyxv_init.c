@@ -182,8 +182,12 @@ static void *init_thread(void *arg) {
          * so h_QueryAdaptors never has to call XVisualIDFromVisual()
          * from the server's main thread while the render thread may be
          * concurrently holding the Display lock.                        */
-        cyxv_set_visual_id(
-            (uint32_t)XVisualIDFromVisual(DefaultVisual(dpy, scr)));
+        uint32_t vid =
+            (uint32_t)XVisualIDFromVisual(DefaultVisual(dpy, scr));
+        fprintf(stderr,
+                "[CyXV] XOpenDisplay(%s) ok — screen=%d depth=%d visual=0x%x\n",
+                cfg.display, scr, DefaultDepth(dpy, scr), vid);
+        cyxv_set_visual_id(vid);
         cyxv_set_display(dpy, scr);
         cyxv_start_render_thread();
     } else {
@@ -232,8 +236,8 @@ static void cyxv_ctor(void) {
      * (which share g_dpy) deadlock immediately when the first XV client
      * connects.  Called here, on the main thread, before we spawn
      * init_thread, to guarantee ordering.                              */
-    XInitThreads();
-    fprintf(stderr, "[CyXV] libcyxv loaded — spawning init thread\n");
+    int xth = XInitThreads();
+    fprintf(stderr, "[CyXV] libcyxv loaded — XInitThreads()=%d — spawning init thread\n", xth);
     pthread_t tid;
     pthread_create(&tid, NULL, init_thread, NULL);
     pthread_detach(tid);
