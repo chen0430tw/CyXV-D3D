@@ -1,6 +1,8 @@
 #ifndef CYXV_CONFIG_H
 #define CYXV_CONFIG_H
 
+#include <stdint.h>
+
 /*
  * cyxv_config.h — Runtime configuration for CyXV-D3D
  *
@@ -28,12 +30,40 @@
  *   ring_drop_log = true | false
  *     Log a message when frames are dropped due to full ring buffer.
  *     Default: false (silent drop, avoids flooding stderr)
+ *
+ *   rva_add_extension = 0x48a4e0
+ *     RVA (file offset from XWin.exe image base) of AddExtension().
+ *     Used when dlsym fails (stripped binary).  Find the correct value:
+ *
+ *       # 1. Get PE preferred image base
+ *       objdump -p /usr/bin/XWin.exe | grep ImageBase
+ *       # e.g. "ImageBase               0000000100400000"
+ *
+ *       # 2. Run XWin with cyxv.dll and read the log — it prints:
+ *       #    [CyXV] image_base = 0x<runtime_base>
+ *
+ *       # 3. Find AddExtension VA with GDB:
+ *       gdb -p $(pgrep XWin) -ex "p &AddExtension" -batch 2>/dev/null
+ *       # or via signature scan:
+ *       strings -t x /usr/bin/XWin.exe | grep "^.\{1,8\} RANDR$"
+ *       # pick an extension name VA, trace calls into AddExtension
+ *
+ *       # 4. RVA = VA - runtime_base   (or VA - PE_image_base for objdump VAs)
+ *
+ *     Default: 0 (disabled; falls back to dlsym only)
+ *
+ *   rva_write_to_client = 0x546de0
+ *     RVA of WriteToClient().  Same method as above.
+ *     Default: 0
  */
 
 typedef struct {
-    int  xvcompat;          /* bool: present as "XVideo"      */
-    char display[64];       /* render thread display string   */
-    int  ring_drop_log;     /* bool: log ring-full drops      */
+    int      xvcompat;          /* bool: present as "XVideo"      */
+    char     display[64];       /* render thread display string   */
+    int      ring_drop_log;     /* bool: log ring-full drops      */
+    uint64_t rva_add_extension;    /* 0 = disabled                 */
+    uint64_t rva_write_to_client;
+    uint64_t rva_init_extensions;  /* hook target; 0 = use thread  */
 } CyxvConfig;
 
 /* Load config; populates *cfg with defaults then overrides from file. */

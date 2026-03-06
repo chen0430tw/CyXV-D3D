@@ -13,8 +13,11 @@
 /* ── Defaults ─────────────────────────────────────────────────────────── */
 
 static void set_defaults(CyxvConfig *cfg) {
-    cfg->xvcompat     = 1;      /* present as "XVideo" by default */
-    cfg->ring_drop_log = 0;
+    cfg->xvcompat            = 1;      /* present as "XVideo" by default */
+    cfg->ring_drop_log       = 0;
+    cfg->rva_add_extension   = 0;
+    cfg->rva_write_to_client = 0;
+    cfg->rva_init_extensions = 0;
     strncpy(cfg->display, ":0", sizeof(cfg->display) - 1);
 }
 
@@ -49,6 +52,12 @@ static void apply_kv(CyxvConfig *cfg, const char *key, const char *val) {
         strncpy(cfg->display, val, sizeof(cfg->display) - 1);
     } else if (!strcmp(key, "ring_drop_log")) {
         parse_bool(val, &cfg->ring_drop_log);
+    } else if (!strcmp(key, "rva_add_extension")) {
+        cfg->rva_add_extension = (uint64_t)strtoull(val, NULL, 16);
+    } else if (!strcmp(key, "rva_write_to_client")) {
+        cfg->rva_write_to_client = (uint64_t)strtoull(val, NULL, 16);
+    } else if (!strcmp(key, "rva_init_extensions")) {
+        cfg->rva_init_extensions = (uint64_t)strtoull(val, NULL, 16);
     }
     /* Unknown keys are silently ignored for forward compatibility */
 }
