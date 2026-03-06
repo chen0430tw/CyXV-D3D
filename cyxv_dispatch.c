@@ -277,15 +277,90 @@ void cyxv_start_render_thread(void) {
 
 /* ── XV reply helpers (dispatch thread — no blocking allowed) ─────────── */
 
-static xXvImageFormatInfo g_formats[] = {
-    { FOURCC_YV12, 1,0,{0},{0}, 12,3,{0},24,{0},0,0,0,0,0,0,
-      8,8,8, 1,2,2, 1,2,2, "YVU",{0},0,{0} },
-    { FOURCC_I420, 1,0,{0},{0}, 12,3,{0},24,{0},0,0,0,0,0,0,
-      8,8,8, 1,2,2, 1,2,2, "YUV",{0},0,{0} },
-    { FOURCC_YUY2, 1,0,{0},{0}, 16,1,{0},24,{0},0,0,0,1,0,0,
-      8,8,8, 1,2,1, 1,1,1, "YUV",{0},0,{0} },
-    { FOURCC_NV12, 1,0,{0},{0}, 12,2,{0},24,{0},0,0,0,0,0,0,
-      8,8,8, 1,2,2, 1,2,2, "YUV",{0},0,{0} },
+/*
+ * g_formats[] — image formats advertised to XV clients.
+ *
+ * Fields use designated initializers so the mapping to xXvImageFormatInfo
+ * is explicit and survives struct-layout changes.
+ *
+ * type:   0=RGB  1=YUV   (xv.xml ImageFormatInfoType)
+ * format: 0=Packed  1=Planar
+ * bpp:    bits per pixel for the luma plane (or packed pixel)
+ * *_sample_bits: meaningful bits per sample per channel
+ * horz/vert_*_period: subsampling periods (1=full, 2=half)
+ * comp_order: channel ordering string (up to 32 chars)
+ */
+static const xXvImageFormatInfo g_formats[] = {
+    /* YV12 — planar 4:2:0, Y+V+U */
+    {
+        .id            = FOURCC_YV12,
+        .type          = 1,        /* YUV */
+        .byte_order    = 0,        /* LSBFirst */
+        .bpp           = 12,
+        .num_planes    = 3,
+        .depth         = 24,
+        .format        = 1,        /* Planar */
+        .y_sample_bits = 8, .u_sample_bits = 8, .v_sample_bits = 8,
+        .horz_y_period = 1, .horz_u_period = 2, .horz_v_period = 2,
+        .vert_y_period = 1, .vert_u_period = 2, .vert_v_period = 2,
+        .comp_order    = "YVU",
+    },
+    /* I420 — planar 4:2:0, Y+U+V */
+    {
+        .id            = FOURCC_I420,
+        .type          = 1,
+        .byte_order    = 0,
+        .bpp           = 12,
+        .num_planes    = 3,
+        .depth         = 24,
+        .format        = 1,
+        .y_sample_bits = 8, .u_sample_bits = 8, .v_sample_bits = 8,
+        .horz_y_period = 1, .horz_u_period = 2, .horz_v_period = 2,
+        .vert_y_period = 1, .vert_u_period = 2, .vert_v_period = 2,
+        .comp_order    = "YUV",
+    },
+    /* YUY2 — packed 4:2:2, YUYV byte order */
+    {
+        .id            = FOURCC_YUY2,
+        .type          = 1,
+        .byte_order    = 0,
+        .bpp           = 16,
+        .num_planes    = 1,
+        .depth         = 24,
+        .format        = 0,        /* Packed */
+        .y_sample_bits = 8, .u_sample_bits = 8, .v_sample_bits = 8,
+        .horz_y_period = 1, .horz_u_period = 2, .horz_v_period = 2,
+        .vert_y_period = 1, .vert_u_period = 1, .vert_v_period = 1,
+        .comp_order    = "YUYV",
+    },
+    /* UYVY — packed 4:2:2, UYVY byte order */
+    {
+        .id            = FOURCC_UYVY,
+        .type          = 1,
+        .byte_order    = 0,
+        .bpp           = 16,
+        .num_planes    = 1,
+        .depth         = 24,
+        .format        = 0,
+        .y_sample_bits = 8, .u_sample_bits = 8, .v_sample_bits = 8,
+        .horz_y_period = 1, .horz_u_period = 2, .horz_v_period = 2,
+        .vert_y_period = 1, .vert_u_period = 1, .vert_v_period = 1,
+        .comp_order    = "UYVY",
+    },
+    /* NV12 — semi-planar 4:2:0, Y + interleaved UV */
+    {
+        .id            = FOURCC_NV12,
+        .type          = 1,
+        .byte_order    = 0,
+        .bpp           = 12,
+        .num_planes    = 2,
+        .depth         = 24,
+        .format        = 1,
+        .y_sample_bits = 8, .u_sample_bits = 8, .v_sample_bits = 8,
+        .horz_y_period = 1, .horz_u_period = 2, .horz_v_period = 2,
+        .vert_y_period = 1, .vert_u_period = 2, .vert_v_period = 2,
+        .comp_order    = "YUV",
+    },
 };
 #define NUM_FMT (int)(sizeof(g_formats)/sizeof(g_formats[0]))
 
@@ -293,13 +368,14 @@ static void image_attrs(uint32_t cc, int w, int h,
                          uint32_t *sz, uint32_t p[3], uint32_t o[3], int *np) {
     switch (cc) {
     case FOURCC_YV12: case FOURCC_I420:
-        *np=3; p[0]=w; p[1]=p[2]=w/2;
-        o[0]=0; o[1]=w*h; o[2]=o[1]+w*h/4; *sz=o[2]+w*h/4; break;
+        *np=3; p[0]=(uint32_t)w; p[1]=p[2]=(uint32_t)(w/2);
+        o[0]=0; o[1]=(uint32_t)(w*h); o[2]=o[1]+(uint32_t)(w*h/4);
+        *sz=o[2]+(uint32_t)(w*h/4); break;
     case FOURCC_NV12:
-        *np=2; p[0]=p[1]=w;
-        o[0]=0; o[1]=w*h; *sz=o[1]+w*h/2; break;
+        *np=2; p[0]=p[1]=(uint32_t)w;
+        o[0]=0; o[1]=(uint32_t)(w*h); *sz=o[1]+(uint32_t)(w*h/2); break;
     case FOURCC_YUY2: case FOURCC_UYVY:
-        *np=1; p[0]=w*2; o[0]=0; *sz=w*h*2; break;
+        *np=1; p[0]=(uint32_t)(w*2); o[0]=0; *sz=(uint32_t)(w*h*2); break;
     default: *np=0; *sz=0; break;
     }
 }
@@ -381,6 +457,18 @@ static int h_GetPortAttribute(void *c) {
     return 0;
 }
 
+static int h_QueryBestSize(void *c) {
+    const xXvQueryBestSizeReq *req = req_buf(c);
+    /* Software renderer: any size is fine — echo back destination dimensions */
+    xXvQueryBestSizeReply r = {0};
+    r.type           = 1;
+    r.sequenceNumber = (uint16_t)client_seq(c);
+    r.actual_width   = req->drw_w;
+    r.actual_height  = req->drw_h;
+    send_reply(c, &r, sizeof(r));
+    return 0;
+}
+
 static int h_ListImageFormats(void *c) {
     xXvListImageFormatsReply hdr={0};
     hdr.type=1; hdr.sequenceNumber=(uint16_t)client_seq(c);
@@ -388,7 +476,7 @@ static int h_ListImageFormats(void *c) {
     hdr.length=(uint32_t)(NUM_FMT*sizeof(xXvImageFormatInfo)/4);
     send_reply(c,&hdr,sizeof(hdr));
     for(int i=0;i<NUM_FMT;i++)
-        send_reply(c,&g_formats[i],sizeof(xXvImageFormatInfo));
+        send_reply(c,(const void *)&g_formats[i],sizeof(xXvImageFormatInfo));
     return 0;
 }
 
@@ -492,6 +580,7 @@ int cyxv_dispatch(void *client) {
     case X_XvQueryEncodings:       return h_QueryEncodings(client);
     case X_XvGrabPort:             return h_GrabPort(client);
     case X_XvUngrabPort:           return h_GrabPort(client);
+    case X_XvQueryBestSize:        return h_QueryBestSize(client);
     case X_XvSetPortAttribute:     return 0;
     case X_XvGetPortAttribute:     return h_GetPortAttribute(client);
     case X_XvQueryPortAttributes:  return h_QueryPortAttributes(client);
