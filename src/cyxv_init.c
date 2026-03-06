@@ -15,16 +15,32 @@
  * Config file: $CYXV_CONFIG | ~/.config/cyxv.conf | /etc/cyxv.conf
  *
  * Symbol resolution (ASLR-safe, no hardcoded VAs):
- *   1. dlsym(RTLD_DEFAULT, name)   — Cygwin POSIX linker (proven by GDB)
- *   2. GetProcAddress(exe, name)   — Windows PE export table
- *   3. /proc/self/maps base + RVA  — last resort per-build offset
+ *   1. dlsym(RTLD_DEFAULT, name)   — Cygwin POSIX linker
+ *   2. GetProcAddress(exe, name)   — Windows PE export table (Cygwin only)
+ *   3. /proc/self/maps base + RVA  — config-supplied per-build offset
+ *
+ * Loader Lock:
+ *   On Cygwin/Windows, pthread_create() inside a DLL constructor (called
+ *   while the OS Loader Lock is held) causes a deadlock: the new thread
+ *   tries to acquire the Loader Lock for TLS init, but the calling
+ *   constructor already holds it.
+ *
+ *   Fix: set rva_init_extensions in ~/.config/cyxv.conf.  The constructor
+ *   then writes a 12-byte absolute JMP at InitExtensions() instead of
+ *   spawning a thread.  When XWin calls InitExtensions() after releasing
+ *   the Loader Lock, our hook restores the original bytes, calls the real
+ *   InitExtensions(), then safely spawns the init thread.
+ *
+ *   How to find rva_init_extensions for your XWin build:
+ *     1. Start XWin once with cyxv.dll; the log prints image_base.
+ *     2. gdb -p $(pgrep XWin) -ex "p InitExtensions" -batch
+ *          → $1 = {void (void)} 0x10041fab0 <InitExtensions>
+ *     3. RVA = VA - image_base  (e.g. 0x10041fab0 - 0x100400000 = 0x1fab0)
+ *     4. echo "rva_init_extensions = 1fab0" >> ~/.config/cyxv.conf
  *
  * Build:
  *   gcc -O2 -shared -fPIC -o cyxv.dll \
  *       cyxv_init.c cyxv_dispatch.c cyxv_config.c -lX11 -lpthread
- *
- * Usage:
- *   LD_PRELOAD=$PWD/cyxv.dll XWin :0 -multiwindow -listen tcp &
  */
 
 #define _GNU_SOURCE
@@ -33,26 +49,16 @@
 #include "cyxv_xvproto.h"
 
 #include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <fcntl.h>
+#include <sys/mman.h>
 #include <X11/Xlib.h>
-
-/* ── Stable log handle ────────────────────────────────────────────────────
- * XWin redirects fd 2 (stderr) early in main() to its own log file.
- * cyxv_ctor() runs before main() via __attribute__((constructor)), so we
- * dup() fd 2 right then to capture the terminal's stderr.  All subsequent
- * [CyXV] output uses g_log instead of stderr so it reaches the user even
- * after XWin's redirection.
- */
-FILE *g_log = NULL;   /* set once in cyxv_ctor, read-only after that */
-
-#define CYXV_LOG(fmt, ...) \
-    do { if (g_log) { fprintf(g_log, fmt, ##__VA_ARGS__); fflush(g_log); } } while(0)
 
 #ifdef __CYGWIN__
 # undef Status        /* X11/Xlib.h defines Status as int; conflicts with w32api */
@@ -60,16 +66,22 @@ FILE *g_log = NULL;   /* set once in cyxv_ctor, read-only after that */
 # include <windows.h>
 #endif
 
-/* ── Build-specific RVA fallbacks ────────────────────────────────────────
- * Used only if dlsym and GetProcAddress both fail.
- * Derive from GDB: RVA = (gdb info address <sym>) VA  −  image_base
- * where image_base = first address in /proc/self/maps for XWin.exe
- *
- * dixLookupResourceByType and ShmSegType are Cygwin-exported symbols;
- * RVA fallbacks are 0 (not needed if dlsym works, which it does for these).
+/* ── Stable log handle ────────────────────────────────────────────────────
+ * XWin redirects fd 2 early in main().  cyxv_ctor() dup()s fd 2 before
+ * that happens, so all [CyXV] output still reaches the terminal.
  */
-#define RVA_AddExtension              0x48a4e0ULL
-#define RVA_WriteToClient             0x546de0ULL
+FILE *g_log = NULL;
+
+#define CYXV_LOG(fmt, ...) \
+    do { if (g_log) { fprintf(g_log, fmt, ##__VA_ARGS__); fflush(g_log); } } while(0)
+
+/* ── Global config (loaded in constructor, read by hook and thread) ─────── */
+static CyxvConfig g_cfg;
+
+/* ── Compile-time RVA fallbacks for dlsym-invisible symbols ─────────────
+ * These are superseded by rva_* keys in the config file at runtime.
+ * dixLookupResourceByType and ShmSegType are Cygwin-exported; no RVA needed.
+ */
 #define RVA_dixLookupResourceByType   0ULL
 #define RVA_ShmSegType                0ULL
 
@@ -78,7 +90,7 @@ FILE *g_log = NULL;   /* set once in cyxv_ctor, read-only after that */
 typedef struct {
     int   index;
     char *name;
-    short base;       /* assigned major opcode ← key field */
+    short base;       /* assigned major opcode */
     short eventBase;
     short errorBase;
 } ExtensionEntry;
@@ -117,18 +129,14 @@ static uintptr_t xwin_image_base(void) {
 /* ── Symbol resolver ─────────────────────────────────────────────────── */
 
 static void *resolve(const char *name, uint64_t rva) {
-    /* 1. Cygwin POSIX dynamic linker — works because GDB confirms the
-     *    symbol is in XWin.exe's exported Cygwin symbol table.         */
     void *sym = dlsym(RTLD_DEFAULT, name);
     if (sym) { CYXV_LOG("[CyXV] %-22s dlsym       → %p\n", name, sym); return sym; }
 
 #ifdef __CYGWIN__
-    /* 2. Windows PE export table */
     sym = (void *)GetProcAddress(GetModuleHandle(NULL), name);
     if (sym) { CYXV_LOG("[CyXV] %-22s GetProcAddr → %p\n", name, sym); return sym; }
 #endif
 
-    /* 3. image_base + RVA (ASLR-safe: RVA is constant per build) */
     uintptr_t base = xwin_image_base();
     if (base && rva) {
         sym = (void *)(base + rva);
@@ -140,41 +148,82 @@ static void *resolve(const char *name, uint64_t rva) {
     return NULL;
 }
 
-/* ── Init thread ─────────────────────────────────────────────────────── */
+/* ── x86-64 / i386 function hook ─────────────────────────────────────────
+ *
+ * x86-64: 12-byte absolute JMP  (MOV RAX, imm64 ; JMP RAX)
+ *         Works regardless of distance between XWin.exe and cyxv.dll.
+ * i386:    5-byte relative  JMP  (E9 rel32)
+ *         Works within ±2 GB.
+ */
+#if defined(__x86_64__)
+# define HOOK_SIZE 12
+#elif defined(__i386__)
+# define HOOK_SIZE 5
+#else
+# define HOOK_SIZE 0
+#endif
 
-static void *init_thread(void *arg) {
-    (void)arg;
+static uint8_t   g_orig_bytes[HOOK_SIZE > 0 ? HOOK_SIZE : 1];
+static uintptr_t g_hook_site;
 
-    /* Load config before anything else */
-    CyxvConfig cfg;
-    cyxv_config_load(&cfg);
+static int write_hook(uintptr_t site, void *target) {
+#if HOOK_SIZE == 0
+    (void)site; (void)target;
+    return -1;  /* unsupported arch */
+#else
+    long pgsz = sysconf(_SC_PAGESIZE);
+    uintptr_t page = site & ~(uintptr_t)(pgsz - 1);
+    /* Cover two pages in case the hook straddles a boundary */
+    if (mprotect((void *)page, (size_t)(pgsz * 2),
+                 PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+        CYXV_LOG("[CyXV] write_hook: mprotect(%p): %s\n",
+                 (void *)page, strerror(errno));
+        return -1;
+    }
+    memcpy(g_orig_bytes, (void *)site, HOOK_SIZE);
+    uint8_t *p = (uint8_t *)site;
+# ifdef __x86_64__
+    p[0] = 0x48; p[1] = 0xB8;                     /* MOV RAX, imm64 */
+    *(uint64_t *)(p + 2) = (uint64_t)(uintptr_t)target;
+    p[10] = 0xFF; p[11] = 0xE0;                    /* JMP RAX        */
+# else /* __i386__ */
+    p[0] = 0xE9;                                   /* JMP rel32      */
+    *(int32_t *)(p + 1) = (int32_t)((uintptr_t)target - site - 5);
+# endif
+    __builtin___clear_cache((char *)site, (char *)(site + HOOK_SIZE));
+    return 0;
+#endif
+}
 
-    const char *extname = cyxv_extension_name(&cfg);
+static void remove_hook(void) {
+    if (!g_hook_site) return;
+    memcpy((void *)g_hook_site, g_orig_bytes, HOOK_SIZE);
+    __builtin___clear_cache((char *)g_hook_site,
+                            (char *)(g_hook_site + HOOK_SIZE));
+    g_hook_site = 0;
+}
+
+/* ── Core init: resolve symbols and register the extension ───────────── */
+
+static void do_init(void) {
+    const char *extname = cyxv_extension_name(&g_cfg);
     CYXV_LOG("[CyXV] xvcompat=%s → registering as \"%s\"\n",
-             cfg.xvcompat ? "true" : "false", extname);
+             g_cfg.xvcompat ? "true" : "false", extname);
 
-    /* Wait for XWin's InitExtensions() to complete.
-     * The server logs "Initializing built-in extension ..." during startup.
-     * AddExtension is only safe to call after that sequence finishes.    */
-    sleep(2);
-
-    /* ── Resolve required symbols ─────────────────────────────────── */
-
-    AddExtensionFn  add_ext = resolve("AddExtension",  RVA_AddExtension);
-    WriteToClientFn wtc     = resolve("WriteToClient", RVA_WriteToClient);
+    AddExtensionFn  add_ext = resolve("AddExtension",
+                                      g_cfg.rva_add_extension);
+    WriteToClientFn wtc     = resolve("WriteToClient",
+                                      g_cfg.rva_write_to_client);
 
     if (!add_ext) {
         CYXV_LOG("[CyXV] Cannot find AddExtension — aborting\n");
-        return NULL;
+        return;
     }
 
     if (wtc)  cyxv_set_write_fn(wtc);
-    else      CYXV_LOG("[CyXV] WARNING: WriteToClient not found — replies disabled\n");
+    else      CYXV_LOG("[CyXV] WARNING: WriteToClient not found"
+                       " — replies disabled\n");
 
-    /* ── MIT-SHM shmseg XID → shmid resolution ───────────────────── *
-     * dixLookupResourceByType: generic server resource lookup API.   *
-     * ShmSegType: RESTYPE global registered by the SHM extension.    *
-     * Both are Cygwin-exported symbols; dlsym succeeds without RVA.  */
     DixLookupFn    dix_fn   = resolve("dixLookupResourceByType",
                                       RVA_dixLookupResourceByType);
     unsigned long *shm_type = resolve("ShmSegType", RVA_ShmSegType);
@@ -185,53 +234,81 @@ static void *init_thread(void *arg) {
                  "(dixLookup=%p ShmSegType=%p) — falling back to XID mask\n",
                  (void *)dix_fn, (void *)shm_type);
 
-    /* ── Private Display for render thread ────────────────────────── */
-
-    Display *dpy = XOpenDisplay(cfg.display);
+    Display *dpy = XOpenDisplay(g_cfg.display);
     if (dpy) {
         int scr = DefaultScreen(dpy);
-        /* Cache the visual ID NOW, in init_thread (not dispatch thread),
-         * so h_QueryAdaptors never has to call XVisualIDFromVisual()
-         * from the server's main thread while the render thread may be
-         * concurrently holding the Display lock.                        */
         uint32_t vid =
             (uint32_t)XVisualIDFromVisual(DefaultVisual(dpy, scr));
-        CYXV_LOG("[CyXV] XOpenDisplay(%s) ok — screen=%d depth=%d visual=0x%x\n",
-                 cfg.display, scr, DefaultDepth(dpy, scr), vid);
+        CYXV_LOG("[CyXV] XOpenDisplay(%s) ok"
+                 " — screen=%d depth=%d visual=0x%x\n",
+                 g_cfg.display, scr, DefaultDepth(dpy, scr), vid);
         cyxv_set_visual_id(vid);
         cyxv_set_display(dpy, scr);
         cyxv_start_render_thread();
     } else {
-        CYXV_LOG("[CyXV] WARNING: XOpenDisplay(%s) failed — rendering disabled\n",
-                 cfg.display);
+        CYXV_LOG("[CyXV] WARNING: XOpenDisplay(%s) failed"
+                 " — rendering disabled\n", g_cfg.display);
     }
 
-    /* ── Register extension (standard Xorg API, no patching) ─────── */
-
     ExtensionEntry *entry = add_ext(
-        extname,              /* "XVideo" or "CyXV-D3D" per config     */
-        0,                    /* NumEvents — no async events in MVP     */
+        extname,
+        0,                    /* NumEvents                              */
         0,                    /* NumErrors                              */
-        cyxv_dispatch,        /* MainProc — fills ProcVector[opcode]    */
-        cyxv_dispatch_swapped,/* SwappedProc — fills SwappedProcVector  */
+        cyxv_dispatch,
+        cyxv_dispatch_swapped,
         NULL,                 /* CloseDownProc                          */
-        cyxv_minor_opcode     /* MinorOpcodeProc                        */
+        cyxv_minor_opcode
     );
-    /* AddExtension internally writes ProcVector[entry->base] = MainProc
-     * and SwappedProcVector[entry->base] = SwappedProc.
-     * No manual VirtualProtect or vector patching needed.               */
 
     if (entry) {
         CYXV_LOG("[CyXV] \"%s\" registered: opcode=%d entry=%p\n"
                  "[CyXV] Verify: DISPLAY=:0 xdpyinfo | grep %s\n",
                  extname, (int)(unsigned short)entry->base, (void *)entry,
-                 cfg.xvcompat ? "XVideo" : "CyXV-D3D");
+                 g_cfg.xvcompat ? "XVideo" : "CyXV-D3D");
     } else {
         CYXV_LOG("[CyXV] AddExtension returned NULL\n"
-                 "[CyXV] Possible causes: already registered, called too early,\n"
-                 "[CyXV] or extension table is full (max 128 extensions).\n");
+                 "[CyXV] Possible causes: already registered, called too"
+                 " early, or extension table full (max 128).\n");
     }
+}
 
+/* ── Thread entry: sleep then init (Linux / no-hook path) ────────────── */
+
+static void *init_thread(void *arg) {
+    (void)arg;
+    /* Wait for XWin's built-in InitExtensions() to finish so AddExtension
+     * is safe to call.  (Not needed on the hook path — see below.)     */
+    sleep(2);
+    do_init();
+    return NULL;
+}
+
+/* ── Hook function: replaces InitExtensions() on the Cygwin path ────────
+ *
+ * Called by XWin instead of its own InitExtensions().  At this point the
+ * Loader Lock has been released, so pthread_create() is safe.
+ */
+static void init_extensions_hook(void) {
+    /* Restore original bytes so the real InitExtensions can execute */
+    uintptr_t orig_site = g_hook_site;
+    remove_hook();  /* clears g_hook_site */
+
+    /* Call the real InitExtensions */
+    ((void (*)(void))orig_site)();
+
+    /* All built-in extensions are now registered; AddExtension is safe.
+     * Spawn our init thread — no sleep() needed this time.             */
+    CYXV_LOG("[CyXV] InitExtensions intercepted — spawning init thread\n");
+    pthread_t tid;
+    /* Use a simple wrapper that calls do_init() without sleep */
+    extern void *cyxv_init_thread_no_sleep(void *);  /* forward decl below */
+    pthread_create(&tid, NULL, cyxv_init_thread_no_sleep, NULL);
+    pthread_detach(tid);
+}
+
+void *cyxv_init_thread_no_sleep(void *arg) {
+    (void)arg;
+    do_init();
     return NULL;
 }
 
@@ -239,24 +316,47 @@ static void *init_thread(void *arg) {
 
 __attribute__((constructor))
 static void cyxv_ctor(void) {
-    /* XInitThreads() must be called before any other Xlib call.
-     * Without it, Xlib's internal Display mutex is never initialised,
-     * so concurrent calls from the render thread and the dispatch thread
-     * (which share g_dpy) deadlock immediately when the first XV client
-     * connects.  Called here, on the main thread, before we spawn
-     * init_thread, to guarantee ordering.                              */
-    int xth = XInitThreads();
-
-    /* Save fd 2 NOW, before XWin's main() can redirect it.
-     * FD_CLOEXEC keeps it private; O_WRONLY|append writes go to the tty. */
+    /* 1. Save stderr before XWin redirects fd 2 */
     int saved_fd = dup(2);
     if (saved_fd >= 0) {
         fcntl(saved_fd, F_SETFD, FD_CLOEXEC);
         g_log = fdopen(saved_fd, "w");
     }
-    if (!g_log) g_log = stderr;   /* fallback: better than nothing */
+    if (!g_log) g_log = stderr;
 
-    CYXV_LOG("[CyXV] libcyxv loaded — XInitThreads()=%d — spawning init thread\n", xth);
+    /* 2. Load config (needs g_log already set for config path messages) */
+    cyxv_config_load(&g_cfg);
+
+    /* 3. XInitThreads must precede any Xlib call */
+    int xth = XInitThreads();
+
+    /* 4. Print image base to help user calibrate RVAs */
+    uintptr_t base = xwin_image_base();
+    CYXV_LOG("[CyXV] libcyxv loaded — XInitThreads()=%d"
+             " — image_base=0x%lx\n", xth, (unsigned long)base);
+
+    /* 5. If rva_init_extensions is configured, hook InitExtensions() to
+     *    avoid the Cygwin Loader Lock deadlock.
+     *    pthread_create() inside a DLL constructor holds the Loader Lock;
+     *    the new thread then tries to acquire it for TLS init → deadlock.
+     *    The hook fires AFTER the OS releases the lock.                  */
+    if (g_cfg.rva_init_extensions && base) {
+        g_hook_site = base + g_cfg.rva_init_extensions;
+        CYXV_LOG("[CyXV] hooking InitExtensions at %p (RVA 0x%llx)\n",
+                 (void *)g_hook_site,
+                 (unsigned long long)g_cfg.rva_init_extensions);
+        if (write_hook(g_hook_site, init_extensions_hook) == 0) {
+            CYXV_LOG("[CyXV] hook installed — thread deferred\n");
+            return;   /* thread will be created from inside the hook */
+        }
+        CYXV_LOG("[CyXV] hook write failed — falling back to thread\n");
+        g_hook_site = 0;
+    }
+
+    /* 6. Fallback: thread with sleep(2).
+     *    Safe on Linux (no Loader Lock).  On Cygwin without rva_init_extensions
+     *    configured this may deadlock — set the RVA to fix it.          */
+    CYXV_LOG("[CyXV] spawning init thread (sleep-2 path)\n");
     pthread_t tid;
     pthread_create(&tid, NULL, init_thread, NULL);
     pthread_detach(tid);
