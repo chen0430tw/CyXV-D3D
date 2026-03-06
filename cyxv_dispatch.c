@@ -63,6 +63,48 @@ static WriteToClientFn g_wtc = NULL;
 
 void cyxv_set_write_fn(WriteToClientFn fn) { g_wtc = fn; }
 
+/* ── MIT-SHM segment XID → kernel shmid resolution ───────────────────── */
+
+static DixLookupFn   g_dix_lookup    = NULL;
+static unsigned long *g_shm_seg_type = NULL;  /* pointer to ShmSegType global */
+
+void cyxv_set_shm_lookup(DixLookupFn fn, unsigned long *seg_type_ptr) {
+    g_dix_lookup    = fn;
+    g_shm_seg_type  = seg_type_ptr;
+    fprintf(stderr, "[CyXV] SHM lookup: dixLookupResourceByType=%p ShmSegType@%p=0x%lx\n",
+            (void *)fn, (void *)seg_type_ptr,
+            seg_type_ptr ? *seg_type_ptr : 0UL);
+}
+
+/*
+ * Resolve an MIT-SHM segment XID to its kernel shmid.
+ *
+ * Primary path: call dixLookupResourceByType → get ShmDescRec pointer →
+ *   read shmid at offset 8 (x86_64 layout, matches xserver/Xext/shmint.h).
+ *
+ * Fallback: on Cygwin/XWin the resource allocator historically uses the
+ *   kernel shmid as the low 24 bits of the XID.  Unreliable but better
+ *   than returning 0 if the primary path fails.
+ */
+static int shmseg_to_shmid(uint32_t xid, void *client) {
+    if (g_dix_lookup && g_shm_seg_type) {
+        void *desc = NULL;
+        /* DixReadAccess = 1<<1 = 2 (dix.h) */
+        int rc = g_dix_lookup(&desc, (unsigned long)xid,
+                              *g_shm_seg_type, client, 2);
+        if (rc == 0 && desc) {
+            /* ShmDescRec x86_64:  next(8) + shmid(4) at byte offset 8 */
+            int id = *(int *)((char *)desc + 8);
+            if (id > 0) return id;
+        }
+        fprintf(stderr, "[CyXV] dixLookup shmseg 0x%x → rc=%d desc=%p\n",
+                xid, rc, desc);
+    }
+    /* Fallback */
+    int id = (int)(xid & 0x00FFFFFF);
+    return id ? id : (int)xid;
+}
+
 static inline void send_reply(void *client, const void *data, int len) {
     if (g_wtc) g_wtc(client, len, data);
 }
@@ -506,10 +548,10 @@ static int h_QueryImageAttributes(void *c) {
 static int h_ShmPutImage(void *c) {
     const xXvShmPutImageReq *req = req_buf(c);
 
-    /* shmid: on Cygwin's XWin the MIT-SHM shmid is the low 24 bits of
-     * the XShm segment XID (empirical — verify with GDB if needed).   */
-    int shmid = (int)(req->shmseg & 0x00FFFFFF);
-    if (shmid == 0) shmid = (int)req->shmseg;
+    /* Resolve shmseg XID → kernel shmid via XWin's resource table.
+     * Falls back to low-24-bits heuristic if dixLookupResourceByType
+     * was not resolved at init time.                                  */
+    int shmid = shmseg_to_shmid(req->shmseg, c);
 
     FrameMeta m = {
         .fourcc     = req->id,

@@ -49,9 +49,14 @@
  * Used only if dlsym and GetProcAddress both fail.
  * Derive from GDB: RVA = (gdb info address <sym>) VA  −  image_base
  * where image_base = first address in /proc/self/maps for XWin.exe
+ *
+ * dixLookupResourceByType and ShmSegType are Cygwin-exported symbols;
+ * RVA fallbacks are 0 (not needed if dlsym works, which it does for these).
  */
-#define RVA_AddExtension    0x48a4e0ULL
-#define RVA_WriteToClient   0x546de0ULL
+#define RVA_AddExtension              0x48a4e0ULL
+#define RVA_WriteToClient             0x546de0ULL
+#define RVA_dixLookupResourceByType   0ULL
+#define RVA_ShmSegType                0ULL
 
 /* ── Xorg ExtensionEntry (fields we need) ────────────────────────────── */
 
@@ -150,6 +155,21 @@ static void *init_thread(void *arg) {
 
     if (wtc)  cyxv_set_write_fn(wtc);
     else      fprintf(stderr, "[CyXV] WARNING: WriteToClient not found — replies disabled\n");
+
+    /* ── MIT-SHM shmseg XID → shmid resolution ───────────────────── *
+     * dixLookupResourceByType: generic server resource lookup API.   *
+     * ShmSegType: RESTYPE global registered by the SHM extension.    *
+     * Both are Cygwin-exported symbols; dlsym succeeds without RVA.  */
+    DixLookupFn    dix_fn   = resolve("dixLookupResourceByType",
+                                      RVA_dixLookupResourceByType);
+    unsigned long *shm_type = resolve("ShmSegType", RVA_ShmSegType);
+    if (dix_fn && shm_type)
+        cyxv_set_shm_lookup(dix_fn, shm_type);
+    else
+        fprintf(stderr,
+                "[CyXV] WARNING: SHM lookup unavailable "
+                "(dixLookup=%p ShmSegType=%p) — falling back to XID mask\n",
+                (void *)dix_fn, (void *)shm_type);
 
     /* ── Private Display for render thread ────────────────────────── */
 
