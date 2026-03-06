@@ -34,7 +34,7 @@
  *   How to find rva_init_extensions for your XWin build:
  *     1. Start XWin once with cyxv.dll; the log prints image_base.
  *     2. gdb -p $(pgrep XWin) -ex "p InitExtensions" -batch
- *          → $1 = {void (void)} 0x10041fab0 <InitExtensions>
+ *          → $1 = {void (int, char **)} 0x10041fab0 <InitExtensions>
  *     3. RVA = VA - image_base  (e.g. 0x10041fab0 - 0x100400000 = 0x1fab0)
  *     4. echo "rva_init_extensions = 1fab0" >> ~/.config/cyxv.conf
  *
@@ -86,13 +86,29 @@ static CyxvConfig g_cfg;
 #define RVA_ShmSegType                0ULL
 
 /* ── Xorg ExtensionEntry (fields we need) ────────────────────────────── */
-
+/*
+ * Upstream layout (include/extnsionst.h):
+ *   int   index;                          offset  0
+ *   void (*CloseDown)(ExtensionEntry *);  offset  8 on 64-bit / 4 on 32-bit
+ *   const char *name;                     offset 16 on 64-bit / 8 on 32-bit
+ *   int   base;                           offset 24 on 64-bit / 12 on 32-bit
+ *   int   eventBase;
+ *   int   eventLast;
+ *   int   errorBase;
+ *   int   errorLast;
+ *   ...
+ * CloseDown must be present between index and name or all field offsets
+ * past index will be wrong.  base/eventBase/errorBase are int, not short.
+ */
 typedef struct {
     int   index;
-    char *name;
-    short base;       /* assigned major opcode */
-    short eventBase;
-    short errorBase;
+    void  (*CloseDown)(void *);   /* fn ptr: 8 bytes on 64-bit, 4 on 32-bit */
+    const char *name;
+    int   base;       /* assigned major opcode */
+    int   eventBase;
+    int   eventLast;
+    int   errorBase;
+    int   errorLast;
 } ExtensionEntry;
 
 /* ── Function-pointer types ──────────────────────────────────────────── */
@@ -283,7 +299,7 @@ static void do_init(void) {
     if (entry) {
         CYXV_LOG("[CyXV] \"%s\" registered: opcode=%d entry=%p\n"
                  "[CyXV] Verify: DISPLAY=:0 xdpyinfo | grep %s\n",
-                 extname, (int)(unsigned short)entry->base, (void *)entry,
+                 extname, entry->base, (void *)entry,
                  g_cfg.xvcompat ? "XVideo" : "CyXV-D3D");
     } else {
         CYXV_LOG("[CyXV] AddExtension returned NULL\n"
@@ -307,14 +323,18 @@ static void *init_thread(void *arg) {
  *
  * Called by XWin instead of its own InitExtensions().  At this point the
  * Loader Lock has been released, so pthread_create() is safe.
+ *
+ * Signature must match the real InitExtensions(int argc, char *argv[]) so
+ * that argc/argv are correctly received and forwarded on the x86-64 SysV ABI
+ * (rdi=argc, rsi=argv).  A (void) prototype would silently pass garbage.
  */
-static void init_extensions_hook(void) {
+static void init_extensions_hook(int argc, char *argv[]) {
     /* Restore original bytes so the real InitExtensions can execute */
     uintptr_t orig_site = g_hook_site;
     remove_hook();  /* clears g_hook_site */
 
-    /* Call the real InitExtensions */
-    ((void (*)(void))orig_site)();
+    /* Call the real InitExtensions, forwarding the original arguments */
+    ((void (*)(int, char **))orig_site)(argc, argv);
 
     /* All built-in extensions are now registered; AddExtension is safe.
      * Spawn our init thread — no sleep() needed this time.             */
