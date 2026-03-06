@@ -1,36 +1,34 @@
 /*
- * cyxv_init.c — DLL constructor: register XV extension via AddExtension,
- *               then verify/patch ProcVector & SwappedProcVector directly.
+ * cyxv_init.c — DLL constructor: legitimately register the CyXV extension
  *
- * ASLR solution:
- *   GDB confirmed that ProcVector, SwappedProcVector, AddExtension, and
- *   WriteToClient are all visible as named symbols in XWin.exe's Cygwin
- *   dynamic symbol table.  dlsym(NULL, name) resolves them at runtime
- *   without any hardcoded address — fully ASLR-safe.
+ * Extension registration uses the standard Xorg API:
+ *   AddExtension(name, NumEvents, NumErrors, MainProc, SwappedProc,
+ *                CloseDownProc, MinorOpcodeProc)
  *
- *   Fallback chain (only if dlsym fails):
- *     GetProcAddress(GetModuleHandle(NULL), name)  ← Windows PE export table
- *     /proc/self/maps base + build-specific RVA    ← last resort
+ * AddExtension fills ProcVector[opcode] and SwappedProcVector[opcode]
+ * itself — no manual patching of dispatch tables required or performed.
  *
- * Injection flow:
- *   1. dlsym → AddExtension, WriteToClient, ProcVector, SwappedProcVector
- *   2. AddExtension("XVideo") → XWin assigns a major opcode N, fills
- *      ProcVector[N] with our handler automatically.
- *   3. We read back N from ExtensionEntry.base and double-check that
- *      ProcVector[N] == our handler; if not (some builds skip filling it),
- *      we patch it directly.
- *   4. SwappedProcVector[N] is always set explicitly (some builds leave it
- *      pointing to a no-op swapped stub).
+ * The extension name presented to clients is controlled by config:
+ *   xvcompat = true   →  "XVideo"    (XV-compatible; mplayer/mpv find it)
+ *   xvcompat = false  →  "CyXV-D3D"  (native name; no XV masquerade)
+ *
+ * Config file: $CYXV_CONFIG | ~/.config/cyxv.conf | /etc/cyxv.conf
+ *
+ * Symbol resolution (ASLR-safe, no hardcoded VAs):
+ *   1. dlsym(RTLD_DEFAULT, name)   — Cygwin POSIX linker (proven by GDB)
+ *   2. GetProcAddress(exe, name)   — Windows PE export table
+ *   3. /proc/self/maps base + RVA  — last resort per-build offset
  *
  * Build:
- *   gcc -O2 -shared -fPIC -o cyxv.dll cyxv_init.c cyxv_dispatch.c \
- *       -lX11 -lpthread
+ *   gcc -O2 -shared -fPIC -o cyxv.dll \
+ *       cyxv_init.c cyxv_dispatch.c cyxv_config.c -lX11 -lpthread
  *
  * Usage:
  *   LD_PRELOAD=$PWD/cyxv.dll XWin :0 -multiwindow -listen tcp &
  */
 
 #define _GNU_SOURCE
+#include "cyxv_config.h"
 #include "cyxv_dispatch.h"
 #include "cyxv_xvproto.h"
 
@@ -47,46 +45,39 @@
 # include <windows.h>
 #endif
 
-/* ── Build-specific RVA fallbacks (derive from GDB: VA - image_base) ────────
- *
- *   (gdb) info address AddExtension
- *   Symbol "AddExtension" is at 0x10048a4e0
- *   image_base from /proc/self/maps XWin.exe line: 0x100000000
- *   RVA = 0x10048a4e0 - 0x100000000 = 0x48a4e0
- *
- * These are only used if all three primary methods fail.
+/* ── Build-specific RVA fallbacks ────────────────────────────────────────
+ * Used only if dlsym and GetProcAddress both fail.
+ * Derive from GDB: RVA = (gdb info address <sym>) VA  −  image_base
+ * where image_base = first address in /proc/self/maps for XWin.exe
  */
 #define RVA_AddExtension    0x48a4e0ULL
 #define RVA_WriteToClient   0x546de0ULL
-#define RVA_ProcVector      0x587600ULL   /* update from GDB: p &ProcVector  */
-#define RVA_SwappedProcVector 0x587a00ULL /* p &SwappedProcVector            */
 
-/* ── Xorg ExtensionEntry (only the fields we need) ──────────────────────── */
+/* ── Xorg ExtensionEntry (fields we need) ────────────────────────────── */
 
 typedef struct {
-    int   index;        /* extension index in extension table */
+    int   index;
     char *name;
-    short base;         /* ← assigned major opcode */
+    short base;       /* assigned major opcode ← key field */
     short eventBase;
     short errorBase;
-    /* ... more fields we don't care about */
 } ExtensionEntry;
 
-/* ── Function-pointer types ─────────────────────────────────────────────── */
+/* ── Function-pointer types ──────────────────────────────────────────── */
 
 typedef ExtensionEntry * (*AddExtensionFn)(
     const char *name,
     int NumEvents,
     int NumErrors,
-    int            (*MainProc)(void *client),
-    int            (*SwappedMainProc)(void *client),
-    void           (*CloseDownProc)(ExtensionEntry *),
-    unsigned short (*MinorOpcodeProc)(void *client)
+    int            (*MainProc)(void *),
+    int            (*SwappedProc)(void *),
+    void           (*CloseDown)(ExtensionEntry *),
+    unsigned short (*MinorOpcode)(void *)
 );
 
 typedef void (*WriteToClientFn)(void *client, int len, const void *data);
 
-/* ── /proc/self/maps: find XWin.exe image base ──────────────────────────── */
+/* ── /proc/self/maps: XWin.exe image base ────────────────────────────── */
 
 static uintptr_t xwin_image_base(void) {
     FILE *f = fopen("/proc/self/maps", "r");
@@ -103,34 +94,25 @@ static uintptr_t xwin_image_base(void) {
     return base;
 }
 
-/* ── Generic symbol resolver ────────────────────────────────────────────── */
-/*
- * Tries (in order):
- *   1. dlsym(NULL, name)            — Cygwin POSIX linker, proven by GDB
- *   2. GetProcAddress(exe, name)    — Windows PE export table
- *   3. image_base + rva             — ASLR-safe offset fallback
- */
+/* ── Symbol resolver ─────────────────────────────────────────────────── */
+
 static void *resolve(const char *name, uint64_t rva) {
-    /* 1 */
+    /* 1. Cygwin POSIX dynamic linker — works because GDB confirms the
+     *    symbol is in XWin.exe's exported Cygwin symbol table.         */
     void *sym = dlsym(RTLD_DEFAULT, name);
-    if (sym) {
-        fprintf(stderr, "[CyXV] %-24s dlsym        → %p\n", name, sym);
-        return sym;
-    }
+    if (sym) { fprintf(stderr, "[CyXV] %-22s dlsym       → %p\n", name, sym); return sym; }
+
 #ifdef __CYGWIN__
-    /* 2 */
+    /* 2. Windows PE export table */
     sym = (void *)GetProcAddress(GetModuleHandle(NULL), name);
-    if (sym) {
-        fprintf(stderr, "[CyXV] %-24s GetProcAddr  → %p\n", name, sym);
-        return sym;
-    }
+    if (sym) { fprintf(stderr, "[CyXV] %-22s GetProcAddr → %p\n", name, sym); return sym; }
 #endif
-    /* 3 */
+
+    /* 3. image_base + RVA (ASLR-safe: RVA is constant per build) */
     uintptr_t base = xwin_image_base();
     if (base && rva) {
         sym = (void *)(base + rva);
-        fprintf(stderr, "[CyXV] %-24s base+RVA     → %p  (base=%p)\n",
-                name, sym, (void *)base);
+        fprintf(stderr, "[CyXV] %-22s base+RVA    → %p\n", name, sym);
         return sym;
     }
 
@@ -138,105 +120,80 @@ static void *resolve(const char *name, uint64_t rva) {
     return NULL;
 }
 
-/* ── Patch a dispatch vector slot ─────────────────────────────────────────
- *
- * ProcVector is a plain C array of function pointers declared as:
- *   int (*ProcVector[256])(ClientPtr);
- * We index it by the opcode returned from AddExtension.
- */
-static void patch_vector(void **vec, int slot, void *fn, const char *vecname) {
-    if (!vec) return;
-#ifdef __CYGWIN__
-    /* Make the page writable (it may be in a read-only segment) */
-    DWORD old;
-    VirtualProtect(&vec[slot], sizeof(void *), PAGE_EXECUTE_READWRITE, &old);
-#endif
-    vec[slot] = fn;
-    fprintf(stderr, "[CyXV] %s[%d] = %p\n", vecname, slot, fn);
-#ifdef __CYGWIN__
-    VirtualProtect(&vec[slot], sizeof(void *), old, &old);
-#endif
-}
-
-/* ── Delayed init thread ─────────────────────────────────────────────────── */
+/* ── Init thread ─────────────────────────────────────────────────────── */
 
 static void *init_thread(void *arg) {
     (void)arg;
 
-    /* Wait for XWin's InitExtensions() to finish.
-     * The server logs "Initializing built-in extension XFIXES" etc.
-     * AddExtension is safe to call after that point (~500 ms usual). */
+    /* Load config before anything else */
+    CyxvConfig cfg;
+    cyxv_config_load(&cfg);
+
+    const char *extname = cyxv_extension_name(&cfg);
+    fprintf(stderr, "[CyXV] xvcompat=%s → registering as \"%s\"\n",
+            cfg.xvcompat ? "true" : "false", extname);
+
+    /* Wait for XWin's InitExtensions() to complete.
+     * The server logs "Initializing built-in extension ..." during startup.
+     * AddExtension is only safe to call after that sequence finishes.    */
     sleep(2);
 
-    /* ── Resolve all symbols ────────────────────────────────────────── */
+    /* ── Resolve required symbols ─────────────────────────────────── */
 
-    AddExtensionFn  add_ext = resolve("AddExtension",       RVA_AddExtension);
-    WriteToClientFn wtc     = resolve("WriteToClient",      RVA_WriteToClient);
-    void          **PV      = resolve("ProcVector",         RVA_ProcVector);
-    void          **SPV     = resolve("SwappedProcVector",  RVA_SwappedProcVector);
+    AddExtensionFn  add_ext = resolve("AddExtension",  RVA_AddExtension);
+    WriteToClientFn wtc     = resolve("WriteToClient", RVA_WriteToClient);
 
-    if (!add_ext) { fprintf(stderr, "[CyXV] Giving up.\n"); return NULL; }
-
-    if (wtc)  cyxv_set_write_fn(wtc);
-    else      fprintf(stderr, "[CyXV] WARNING: WriteToClient missing — no replies\n");
-
-    /* ── Open private Display and start render thread ───────────────── */
-    Display *dpy = XOpenDisplay(":0");
-    if (dpy) {
-        cyxv_set_display(dpy, DefaultScreen(dpy));
-        cyxv_start_render_thread();   /* owns all shmat/YUV/XPutImage */
-    } else {
-        fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(:0) failed\n");
-    }
-
-    /* ── Call AddExtension ──────────────────────────────────────────── */
-    ExtensionEntry *entry = add_ext(
-        "XVideo",
-        0,                    /* NumEvents  */
-        0,                    /* NumErrors  */
-        cyxv_dispatch,
-        cyxv_dispatch_swapped,
-        NULL,                 /* CloseDownProc */
-        cyxv_minor_opcode
-    );
-
-    if (!entry) {
-        fprintf(stderr, "[CyXV] AddExtension returned NULL "
-                "(already registered, or called too early)\n");
+    if (!add_ext) {
+        fprintf(stderr, "[CyXV] Cannot find AddExtension — aborting\n");
         return NULL;
     }
 
-    int opcode = (int)(unsigned short)entry->base;
-    fprintf(stderr, "[CyXV] XVideo registered: opcode=%d  entry=%p\n",
-            opcode, (void *)entry);
+    if (wtc)  cyxv_set_write_fn(wtc);
+    else      fprintf(stderr, "[CyXV] WARNING: WriteToClient not found — replies disabled\n");
 
-    /* ── Verify and force-patch both dispatch vectors ───────────────── */
-    /*
-     * AddExtension fills ProcVector[opcode] automatically.
-     * We verify it is our function; if not (paranoia / different build),
-     * we patch it.  SwappedProcVector is always patched explicitly because
-     * some builds install a generic "not implemented" swapped stub.
-     */
-    if (PV) {
-        if (PV[opcode] != (void *)cyxv_dispatch) {
-            fprintf(stderr, "[CyXV] ProcVector[%d] was %p, patching\n",
-                    opcode, PV[opcode]);
-            patch_vector(PV, opcode, (void *)cyxv_dispatch, "ProcVector");
-        } else {
-            fprintf(stderr, "[CyXV] ProcVector[%d] already correct ✓\n", opcode);
-        }
+    /* ── Private Display for render thread ────────────────────────── */
+
+    Display *dpy = XOpenDisplay(cfg.display);
+    if (dpy) {
+        cyxv_set_display(dpy, DefaultScreen(dpy));
+        cyxv_start_render_thread();
+    } else {
+        fprintf(stderr, "[CyXV] WARNING: XOpenDisplay(%s) failed — rendering disabled\n",
+                cfg.display);
     }
 
-    if (SPV)
-        patch_vector(SPV, opcode, (void *)cyxv_dispatch_swapped, "SwappedProcVector");
+    /* ── Register extension (standard Xorg API, no patching) ─────── */
 
-    fprintf(stderr, "[CyXV] Done. Test with:\n"
-            "  DISPLAY=:0 xdpyinfo | grep XVideo\n"
-            "  DISPLAY=:0 mplayer -vo xv <file>\n");
+    ExtensionEntry *entry = add_ext(
+        extname,              /* "XVideo" or "CyXV-D3D" per config     */
+        0,                    /* NumEvents — no async events in MVP     */
+        0,                    /* NumErrors                              */
+        cyxv_dispatch,        /* MainProc — fills ProcVector[opcode]    */
+        cyxv_dispatch_swapped,/* SwappedProc — fills SwappedProcVector  */
+        NULL,                 /* CloseDownProc                          */
+        cyxv_minor_opcode     /* MinorOpcodeProc                        */
+    );
+    /* AddExtension internally writes ProcVector[entry->base] = MainProc
+     * and SwappedProcVector[entry->base] = SwappedProc.
+     * No manual VirtualProtect or vector patching needed.               */
+
+    if (entry) {
+        fprintf(stderr,
+                "[CyXV] \"%s\" registered: opcode=%d entry=%p\n"
+                "[CyXV] Verify: DISPLAY=:0 xdpyinfo | grep %s\n",
+                extname, (int)(unsigned short)entry->base, (void *)entry,
+                cfg.xvcompat ? "XVideo" : "CyXV-D3D");
+    } else {
+        fprintf(stderr,
+                "[CyXV] AddExtension returned NULL\n"
+                "[CyXV] Possible causes: already registered, called too early,\n"
+                "[CyXV] or extension table is full (max 128 extensions).\n");
+    }
+
     return NULL;
 }
 
-/* ── DLL constructor ─────────────────────────────────────────────────────── */
+/* ── DLL constructor ─────────────────────────────────────────────────── */
 
 __attribute__((constructor))
 static void cyxv_ctor(void) {

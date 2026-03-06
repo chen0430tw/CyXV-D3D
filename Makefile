@@ -1,7 +1,7 @@
 # CyXV-D3D — Makefile
 #
 # Targets:
-#   cyxv.dll          — XV shim injected into XWin.exe via LD_PRELOAD
+#   cyxv.dll          — XV extension DLL injected into XWin.exe via LD_PRELOAD
 #   phoenix_receiver  — Standalone H.264 stream receiver with XShm display
 #
 # Prerequisites (Cygwin packages):
@@ -12,10 +12,11 @@ CC      = gcc
 CFLAGS  = -O2 -Wall -Wextra
 LDFLAGS =
 
-# ── cyxv.dll (LD_PRELOAD shim) ───────────────────────────────────────────────
+# ── cyxv.dll ─────────────────────────────────────────────────────────────────
 
-CYXV_SRC = cyxv_init.c cyxv_dispatch.c
+CYXV_SRC = cyxv_init.c cyxv_dispatch.c cyxv_config.c
 CYXV_OBJ = $(CYXV_SRC:.c=.o)
+CYXV_HDR = cyxv_xvproto.h cyxv_dispatch.h cyxv_config.h
 
 cyxv.dll: $(CYXV_OBJ)
 	$(CC) -shared -o $@ $^ \
@@ -26,8 +27,12 @@ cyxv.dll: $(CYXV_OBJ)
 	@echo "Usage:"
 	@echo "  LD_PRELOAD=\$$PWD/cyxv.dll XWin :0 -multiwindow -listen tcp &"
 	@echo "  DISPLAY=:0 xdpyinfo | grep XVideo"
+	@echo ""
+	@echo "Config: ~/.config/cyxv.conf"
+	@echo "  xvcompat = true   # present as XVideo (default)"
+	@echo "  xvcompat = false  # present as CyXV-D3D"
 
-$(CYXV_OBJ): %.o: %.c cyxv_xvproto.h cyxv_dispatch.h
+$(CYXV_OBJ): %.o: %.c $(CYXV_HDR)
 	$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
 # ── phoenix_receiver ─────────────────────────────────────────────────────────
@@ -58,12 +63,16 @@ clean:
 
 help:
 	@echo "Targets:"
-	@echo "  make cyxv.dll         Build XV injection shim"
+	@echo "  make cyxv.dll         Build XV extension DLL"
 	@echo "  make phoenix_receiver Build H.264 stream receiver"
 	@echo "  make all              Build both"
 	@echo ""
-	@echo "Test XV registration:"
+	@echo "Config: ~/.config/cyxv.conf"
+	@echo "  xvcompat = true       Register as XVideo (mplayer/mpv compatible)"
+	@echo "  xvcompat = false      Register as CyXV-D3D (native name)"
+	@echo "  display  = :0         Render thread display"
+	@echo ""
+	@echo "Test:"
 	@echo "  LD_PRELOAD=\$$PWD/cyxv.dll XWin :0 -multiwindow -listen tcp &"
-	@echo "  sleep 3"
-	@echo "  DISPLAY=:0 xdpyinfo | grep XVideo"
+	@echo "  sleep 3 && DISPLAY=:0 xdpyinfo | grep -E 'XVideo|CyXV'"
 	@echo "  DISPLAY=:0 mplayer -vo xv your_video.mp4"
