@@ -47,8 +47,15 @@ OPERATIONS
   install
     Install package(s).
 
+  reinstall
+    Reinstall package(s) even if already installed, re-extracting all files.
+
   remove
     Remove package(s) from the system.
+
+  upgrade
+    Upgrade named package(s) to the current version in setup.ini. If no
+    packages are specified, upgrade all installed packages.
 
   update
     Download a fresh copy of the master package list (setup.ini) from the
@@ -106,17 +113,24 @@ OPTIONS
   --nodeps
     Specify this option to skip all dependency checks.
 
+  --noscripts
+    Do not run postinstall scripts.
+
   --version
     Display version and exit.
 "
 
 version="\
-apt-cyg version 1
+apt-cyg version 2
 
 The MIT License (MIT)
 
 Copyright (c) 2005-9 Stephen Jungels
 "
+
+# Global guard: tracks packages currently being processed to break
+# circular dependency chains (e.g. A requires B requires A).
+declare -A _installing
 
 function wget {
   if command wget -h &>/dev/null
@@ -130,9 +144,9 @@ function wget {
 }
 
 function find-workspace {
-  # default working directory and mirror
-  
-  # work wherever setup worked last, if possible
+  # Work wherever setup.exe worked last, if possible.
+  # Use the same block-based awk parser for both last-cache and last-mirror
+  # so that setup.rc format changes affect both consistently.
   cache=$(awk '
   BEGIN {
     RS = "\n\\<"
@@ -144,11 +158,15 @@ function find-workspace {
   ' /etc/setup/setup.rc)
 
   mirror=$(awk '
-  /last-mirror/ {
-    getline
-    print $1
+  BEGIN {
+    RS = "\n\\<"
+    FS = "\n\t"
+  }
+  $1 == "last-mirror" {
+    print $2
   }
   ' /etc/setup/setup.rc)
+
   mirrordir=$(sed '
   s / %2f g
   s : %3a g
@@ -168,15 +186,24 @@ function find-workspace {
 function get-setup {
   touch setup.ini
   mv setup.ini setup.ini-save
-  wget -N $mirror/$arch/setup.bz2
-  if [ -e setup.bz2 ]
+  # Try xz format first (current Cygwin mirrors), fall back to bz2 (legacy).
+  wget -N "$mirror/$arch/setup.xz" 2>/dev/null
+  if [ -e setup.xz ]
   then
-    bunzip2 setup.bz2
+    xz -d setup.xz
     mv setup setup.ini
     echo Updated setup.ini
   else
-    echo Error updating setup.ini, reverting
-    mv setup.ini-save setup.ini
+    wget -N "$mirror/$arch/setup.bz2" 2>/dev/null
+    if [ -e setup.bz2 ]
+    then
+      bunzip2 setup.bz2
+      mv setup setup.ini
+      echo Updated setup.ini
+    else
+      echo Error updating setup.ini, reverting
+      mv setup.ini-save setup.ini
+    fi
   fi
 }
 
@@ -192,6 +219,51 @@ function check-packages {
 
 function warn {
   printf '\e[1;31m%s\e[m\n' "$*" >&2
+}
+
+# Extract the dependency list from a desc file.
+#
+# Modern setup.ini uses   depends2: (or depends:)
+#   - comma-separated, may carry version constraints like " (>= 1.0)"
+# Legacy setup.ini uses  requires:
+#   - space-separated, no version constraints
+#
+# Both are normalised to a plain space-separated list of package names.
+function get-requires {
+  local descfile=$1
+  awk '
+  /^(depends2|depends):/ {
+    sub(/^(depends2|depends):[[:space:]]*/, "")
+    gsub(/ \([^)]*\)/, "")   # strip " (>= 1.0)" style constraints
+    gsub(/,[[:space:]]*/, " ") # commas -> spaces
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+    print
+    found = 1
+    exit
+  }
+  /^requires:/ {
+    if (!found) {
+      sub(/^requires:[[:space:]]*/, "")
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+      print
+      exit
+    }
+  }
+  ' "$descfile"
+}
+
+# Run all pending postinstall scripts (.sh and .dash).
+function run-postinstall {
+  find /etc/postinstall \( -name '*.sh' -o -name '*.dash' \) | sort | \
+  while read script
+  do
+    echo Running $script
+    case $script in
+      *.dash) dash "$script" ;;
+      *)      "$script"      ;;
+    esac
+    mv "$script" "$script.done"
+  done
 }
 
 function apt-update {
@@ -283,9 +355,15 @@ function apt-depends {
     $1 == "@" {
       apg = $2
     }
-    $1 == "requires:" {
-      for (z=2; z<=NF; z++)
-        reqs[apg][z-1] = $z
+    $1 == "depends2:" || $1 == "depends:" || $1 == "requires:" {
+      line = $0
+      sub(/^(depends2|depends|requires):[[:space:]]*/, "", line)
+      gsub(/ \([^)]*\)/, "", line)
+      gsub(/,[[:space:]]*/, " ", line)
+      n = split(line, parts)
+      delete reqs[apg]
+      for (i = 1; i <= n; i++)
+        if (parts[i] != "") reqs[apg][i] = parts[i]
     }
     END {
       prpg(ENVIRON["pkg"])
@@ -317,9 +395,15 @@ function apt-rdepends {
     $1 == "@" {
       apg = $2
     }
-    $1 == "requires:" {
-      for (z=2; z<=NF; z++)
-        reqs[$z][length(reqs[$z])+1] = apg
+    $1 == "depends2:" || $1 == "depends:" || $1 == "requires:" {
+      line = $0
+      sub(/^(depends2|depends|requires):[[:space:]]*/, "", line)
+      gsub(/ \([^)]*\)/, "", line)
+      gsub(/,[[:space:]]*/, " ", line)
+      n = split(line, parts)
+      for (i = 1; i <= n; i++)
+        if (parts[i] != "")
+          reqs[parts[i]][length(reqs[parts[i]])+1] = apg
     }
     END {
       prpg(ENVIRON["pkg"])
@@ -354,10 +438,10 @@ function apt-download {
 }
 
 function download {
-  local pkg digest digactual
+  local pkg digest
   pkg=$1
-  # look for package and save desc file
 
+  # Look up package block from setup.ini and save it as desc
   awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
   if [ ! -s desc ]
   then
@@ -365,9 +449,7 @@ function download {
     exit 1
   fi
 
-  # download and unpack the bz2 or xz file
-
-  # pick the latest version, which comes first
+  # Pick the current (first) version entry
   set -- $(awk '$1 == "install:"' desc)
   if (( ! $# ))
   then
@@ -378,24 +460,170 @@ function download {
   dn=$(dirname $2)
   bn=$(basename $2)
 
-  # check the md5
+  # Detect hash algorithm from digest length:
+  #   32  chars  -> MD5
+  #   128 chars  -> SHA-512 hex
   digest=$4
   case ${#digest} in
    32) hash=md5sum    ;;
   128) hash=sha512sum ;;
+    *) hash=sha512sum ;;  # fallback for unknown/base64 variants
   esac
+
   mkdir -p "$cache/$mirrordir/$dn"
   cd "$cache/$mirrordir/$dn"
-  if ! test -e $bn || ! $hash -c <<< "$digest $bn"
+  if ! test -e $bn || ! $hash -c <<< "$digest  $bn"
   then
     wget -O $bn $mirror/$dn/$bn
-    $hash -c <<< "$digest $bn" || exit
+    $hash -c <<< "$digest  $bn" || exit
   fi
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
   cd ~-
   mv desc "$cache/$mirrordir/$dn"
   echo $dn $bn > /tmp/dwn
+}
+
+# Core install worker shared by apt-install, apt-reinstall, and apt-upgrade.
+#
+# Usage: _do-install <pkgname> <explicit> [--force]
+#   explicit : 1 = user-requested (written to installed.db as "1")
+#              0 = pulled in as a dependency (written as "0")
+#   --force  : reinstall even if already present in installed.db
+function _do-install {
+  local pkg=$1 explicit=${2:-1} force=${3:-}
+  local dn bn requires package wr
+
+  # Break circular dependency chains before they recurse infinitely.
+  if [[ ${_installing[$pkg]+_} ]]; then
+    echo "  (skipping $pkg — already queued, circular dependency?)"
+    return 0
+  fi
+
+  if [[ -z $force ]] && grep -q "^$pkg " /etc/setup/installed.db
+  then
+    echo "Package $pkg is already installed, skipping"
+    return 0
+  fi
+
+  _installing[$pkg]=1
+  echo "Installing $pkg"
+
+  download "$pkg"
+  read dn bn </tmp/dwn
+  echo Unpacking...
+
+  cd "$cache/$mirrordir/$dn"
+  tar -x -C / -f "$bn"
+
+  # Insert (or replace) the package record in installed.db in sorted order.
+  # Third column: 1 = explicitly installed by user, 0 = auto-dependency.
+  awk '
+  ins != 1 && pkg < $1 {
+    print pkg, bz, explicit
+    ins = 1
+  }
+  $1 != pkg { print }
+  END {
+    if (ins != 1) print pkg, bz, explicit
+  }
+  ' pkg="$pkg" bz="$bn" explicit="$explicit" /etc/setup/installed.db > /tmp/awk.$$
+  mv /etc/setup/installed.db /etc/setup/installed.db-save
+  mv /tmp/awk.$$ /etc/setup/installed.db
+
+  if [ -v nodeps ]; then
+    unset '_installing[$pkg]'
+    return 0
+  fi
+
+  # Recursively install dependencies.
+  # get-requires handles both modern depends2:/depends: and legacy requires:.
+  requires=$(get-requires "$cache/$mirrordir/$dn/desc")
+  cd ~-
+
+  wr=0
+  if [[ $requires ]]; then
+    echo "Package $pkg requires: $requires"
+    for package in $requires
+    do
+      [[ -z $package ]] && continue
+      if grep -q "^$package " /etc/setup/installed.db
+      then
+        echo "  $package already installed"
+        continue
+      fi
+      _do-install "$package" 0 || (( wr++ ))
+    done
+  fi
+
+  (( wr )) && echo "Some required packages did not install, continuing"
+
+  unset '_installing[$pkg]'
+  return 0
+}
+
+function apt-install {
+  check-packages
+  find-workspace
+  local pkg
+  for pkg in "${pks[@]}"
+  do
+    _do-install "$pkg" 1
+  done
+  [ -v noscripts ] && return
+  run-postinstall
+}
+
+function apt-reinstall {
+  check-packages
+  find-workspace
+  local pkg
+  for pkg in "${pks[@]}"
+  do
+    _do-install "$pkg" 1 --force
+  done
+  [ -v noscripts ] && return
+  run-postinstall
+}
+
+function apt-upgrade {
+  find-workspace
+  # No targets = upgrade everything currently installed.
+  if [[ -z ${pks[*]} ]]; then
+    mapfile -t pks < <(awk 'NR>1 { print $1 }' /etc/setup/installed.db)
+  fi
+  local pkg current_bn available_bn tmpd
+  tmpd=$(mktemp -d)
+  for pkg in "${pks[@]}"
+  do
+    if ! grep -q "^$pkg " /etc/setup/installed.db
+    then
+      echo "Package $pkg is not installed; use 'install' instead"
+      continue
+    fi
+
+    current_bn=$(awk -v p="$pkg" 'NR>1 && $1==p { print $2; exit }' \
+      /etc/setup/installed.db)
+
+    awk '$1 == pc' RS='\n\n@ ' FS='\n' pc="$pkg" setup.ini > "$tmpd/desc"
+    if [ ! -s "$tmpd/desc" ]; then
+      warn "Package $pkg not found in setup.ini, skipping"
+      continue
+    fi
+
+    available_bn=$(awk '$1 == "install:" { print $2; exit }' "$tmpd/desc" \
+      | sed 's|.*/||')
+
+    if [[ "$current_bn" == "$available_bn" ]]; then
+      echo "Package $pkg is up to date ($current_bn)"
+    else
+      echo "Upgrading $pkg: $current_bn -> $available_bn"
+      _do-install "$pkg" 1 --force
+    fi
+  done
+  rm -rf "$tmpd"
+  [ -v noscripts ] && return
+  run-postinstall
 }
 
 function apt-search {
@@ -432,81 +660,6 @@ function apt-searchall {
     /^cygwin32-/ {next}
     {print $1}
     ' FS=-[[:digit:]] matches
-  done
-}
-
-function apt-install {
-  check-packages
-  find-workspace
-  local pkg dn bn requires wr package sbq script
-  for pkg in "${pks[@]}"
-  do
-
-  if grep -q "^$pkg " /etc/setup/installed.db
-  then
-    echo Package $pkg is already installed, skipping
-    continue
-  fi
-  (( sbq++ )) && echo
-  echo Installing $pkg
-
-  download $pkg
-  read dn bn </tmp/dwn
-  echo Unpacking...
-
-  cd "$cache/$mirrordir/$dn"
-  tar -x -C / -f $bn
-  # update the package database
-
-  awk '
-  ins != 1 && pkg < $1 {
-    print pkg, bz, 0
-    ins = 1
-  }
-  1
-  END {
-    if (ins != 1) print pkg, bz, 0
-  }
-  ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
-  mv /etc/setup/installed.db /etc/setup/installed.db-save
-  mv /tmp/awk.$$ /etc/setup/installed.db
-
-  [ -v nodeps ] && continue
-  # recursively install required packages
-
-  requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
-  cd ~-
-  wr=0
-  if [[ $requires ]]
-  then
-    echo Package $pkg requires the following packages, installing:
-    echo $requires
-    for package in $requires
-    do
-      if grep -q "^$package " /etc/setup/installed.db
-      then
-        echo Package $package is already installed, skipping
-        continue
-      fi
-      apt-cyg install --noscripts $package || (( wr++ ))
-    done
-  fi
-  if (( wr ))
-  then
-    echo some required packages did not install, continuing
-  fi
-
-  # run all postinstall scripts
-
-  [ -v noscripts ] && continue
-  find /etc/postinstall -name '*.sh' | while read script
-  do
-    echo Running $script
-    $script
-    mv $script $script.done
-  done
-  echo Package $pkg installed
-
   done
 }
 
@@ -554,7 +707,7 @@ function apt-remove {
     done
     for each in ${dt[*]}
     do
-      [ -d /$each ] && rmdir --i /$each
+      [ -d /$each ] && rmdir --ignore-fail-on-non-empty /$each
     done
     rm -f setup/"$pkg".lst.gz postinstall/"$pkg".sh.done
     awk -i inplace '$1 != ENVIRON["pkg"]' setup/installed.db
@@ -643,8 +796,9 @@ do
       shift
     ;;
 
-    list | cache  | remove | depends | listall  | download | listfiles |\
-    show | mirror | search | install | category | rdepends | searchall )
+    list | cache     | remove    | depends  | listall  | download | listfiles |\
+    show | mirror    | search    | install  | category | rdepends | searchall |\
+    reinstall | upgrade )
       if [[ $command ]]
       then
         pks+=("$1")
