@@ -242,6 +242,28 @@ function warn {
   printf '\e[1;31m%s\e[m\n' "$*" >&2
 }
 
+# Render a colored apt-get-style progress bar while a background wget runs.
+# Args: <total_bytes> <output_file> <wget_pid>
+# Exits immediately (no-op) when stderr is not a terminal.
+function _progress-bar {
+  local total=$1 file=$2 wpid=$3
+  [[ -t 2 ]] || return
+  local w=40 cur=0 pct=0 n=0 bar
+  while kill -0 "$wpid" 2>/dev/null; do
+    cur=$(stat -c%s "$file" 2>/dev/null || echo 0)
+    if (( total > 0 )); then
+      pct=$(( cur * 100 / total ))
+      n=$(( cur * w / total ))
+      (( n > w )) && n=w
+      bar=$(printf '%*s' "$n" '' | tr ' ' '=')
+      printf '\r  \e[1;32m[%-*s]\e[0m %3d%%' "$w" "$bar" "$pct" >&2
+    fi
+    sleep 0.1
+  done
+  bar=$(printf '%*s' "$w" '' | tr ' ' '=')
+  printf '\r  \e[1;32m[%s]\e[0m 100%%\n' "$bar" >&2
+}
+
 # Compute the hash of <file> using <hashcmd>, compare against <expected>, and
 # print a one-line result in the style of Linux package managers:
 #
@@ -721,7 +743,11 @@ function download {
       else printf "%d B", b+0
     }')
     printf 'Get: %s/%s/%s [%s]\n' "$mirror" "$dn" "$bn" "$size_h"
-    wget -q --show-progress -O "$bn" "$mirror/$dn/$bn"
+    local _size_bytes=$3
+    wget -q -O "$bn" "$mirror/$dn/$bn" &
+    local _dl_pid=$!
+    _progress-bar "$_size_bytes" "$bn" "$_dl_pid"
+    wait "$_dl_pid"
   fi
 
   # Always display an explicit verification line so the operator can confirm
